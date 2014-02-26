@@ -98,6 +98,10 @@ ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
  **/
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	var that = this ;
+	// Because we like to accept nicely posted JSON, _and_ form input data, we 
+	// test the body type
+	var args = (req.body instanceof Array) ? req.body:[req.body] ; // Wasn't a JSON encoded argument list, so wrap it like it was
+
 	var sendReturn = function(result){
 		if (rsp.headersSent) {
 			DEBUG(99,"Response already sent",name,args,result) ;
@@ -107,6 +111,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 			if (result.status>=500) {
 				DEBUG(28,"5xx Response: ",req.session, json) ;
 			}
+			DEBUG(1,name,args) ;
 			rsp.end(json);
 		}
 	} ;
@@ -123,10 +128,6 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		return returnCB.error(new Error("Endpoint not found: "+name),404) ;
 	}
 		
-	// Because we like to accept nicely posted JSON, _and_ form input data, we 
-	// test the body type
-	var args = (req.body instanceof Array) ? req.body:[req.body] ; // Wasn't a JSON encoded argument list, so wrap it like it was
-	
 	// Augment "this" with the current request so the rmeoted API can query session
 	// info etc.
 	var context = Object.create(this.api[name].context) ;
