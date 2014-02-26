@@ -1,0 +1,26 @@
+{
+  "name": "ApiPublisher",
+  "version": "0.1.0",
+  "description": "Async JS API remoting",
+  "main": "ApiPublisher.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "nodent": "0.1.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/swoonit-admin/apipublisher.git"
+  },
+  "engine": "node >= 0.10.0",
+  "keywords": [
+    "Javascript",
+    "asynchronous",
+    "remote"
+  ],
+  "author": "favr.tt <dev@favr.tt>",
+  "license": "BSD-2-Clause",
+  "bugs": {
+  }
+}
