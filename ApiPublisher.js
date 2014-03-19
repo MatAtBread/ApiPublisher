@@ -162,7 +162,7 @@ ApiPublisher.prototype.handle = function(){
 		if (path.length<2 || path[1]=="") {
 			remoted.sendRemoteApi(req,rsp) ;
 		} else {
-			remoted.callRemoteApi(decodeURIComponent(path[1]),req,rsp) ;	// Client is making a remote call
+			remoted.callRemoteApi(decodeURIComponent(path.pop()),req,rsp) ;	// Client is making a remote call
 		}
 	} ;
 };
