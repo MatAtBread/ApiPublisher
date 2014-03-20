@@ -55,11 +55,14 @@ ApiPublisher.prototype.getRemoteApi = function(req,ok,path) {
 		self.path = path ;
 	async.map(self.api, function(e){
 		return function(ok,error) {
-			if (self.api[e].fn.clientInstance) {
-				if (self.api[e].fn.length != self.api[e].fn.clientInstance.length) {
+			var fn = self.api[e].fn ;
+			if (fn[req.apiVersion])
+				fn = fn[req.apiVersion] ;
+			if (fn.clientInstance) {
+				if (fn.length != fn.clientInstance.length) {
 					DEBUG(20,"Warning: Remote instance function arguments not the same as declaration:",e) ;
 				}
-				self.api[e].fn.apply({request:req},self.api[e].fn.clientInstance)(function(instanceData){
+				fn.apply({request:req},fn.clientInstance)(function(instanceData){
 					if (instanceData instanceof ApiPublisher) {
 						 instanceData.getRemoteApi(req, ok, e) ;
 					} else {
