@@ -128,7 +128,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		return returnCB.error(new Error("Endpoint not found: "+name),404) ;
 	}
 		
-	// Augment "this" with the current request so the rmeoted API can query session
+	// Augment "this" with the current request so the remoted API can query session
 	// info etc.
 	var context = Object.create(this.api[name].context) ;
 	context.request = req ;
@@ -136,7 +136,12 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	// Because functions without an object do not have any useful scope, we also hide
 	// the request in the return object so it's easy to pick up
 	returnCB.req = req ;
-	this.api[name].fn.apply(context,args)(returnCB,returnCB.error) ;
+	
+	var fn = this.api[name].fn ;
+	if (fn[req.apiVersion])
+		fn = fn[req.apiVersion] ; 
+	
+	fn.apply(context,args)(returnCB,returnCB.error) ;
 };
 
 /**
