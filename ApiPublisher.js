@@ -84,7 +84,7 @@ function getConstructor(v) {
 var stdHeaders = {
 		'Content-Type': 'application/json',
 		'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-		'Expires': '0',
+		'Expires': 'Fri, 01 Jan 1990 00:00:00 GMT',
 		'pragma': 'no-cache'
 } ;
 
