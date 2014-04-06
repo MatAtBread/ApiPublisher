@@ -104,7 +104,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	// Because we like to accept nicely posted JSON, _and_ form input data, we 
 	// test the body type
 	var args = (req.body instanceof Array) ? req.body:[req.body] ; // Wasn't a JSON encoded argument list, so wrap it like it was
-
+	var tStart = Date.now() ;
 	var sendReturn = function(result){
 		if (rsp.headersSent) {
 			DEBUG(99,"Response already sent",name,args,result) ;
@@ -114,7 +114,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 			if (result.status>=500) {
 				DEBUG(28,"5xx Response: ",req.session, json) ;
 			}
-			DEBUG(1,name,args) ;
+			DEBUG(1,name,args," "+(Date.now()-tStart)+"ms") ;
 			rsp.end(json);
 		}
 	} ;
