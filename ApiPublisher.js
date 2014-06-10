@@ -91,7 +91,7 @@ ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
 	var that = this ;
 	this.getRemoteApi(req,null,function(instance){
 		rsp.writeHead(200, stdHeaders);
-		rsp.end(JSON.stringify(instance)) ; //,that.opts.serializer && that.opts.serializer(that,req,rsp)));
+		rsp.end(JSON.stringify(instance,that.opts.serializer && that.opts.serializer(that,req,rsp)));
 	}) ;
 };
 
