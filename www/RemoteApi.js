@@ -26,7 +26,7 @@ window.RemoteApi = (function(){
 						if (x.getResponseHeader("Content-Type")=="application/json") {
 							var data = x.responseText ;
 							try {
-								data = !data?data:JSON.parse(data,that.options.reviver()) ;
+								data = !data?data:JSON.parse(data,that.options.reviver && that.options.reviver()) ;
 							} catch (ex) {
 								that.apiEnd(path,name,args,false) ;
 								return error(ex) ;
