@@ -13,17 +13,20 @@ var DEBUG = global.DEBUG || function(){ console.log.apply(this,arguments); } ;
 /**
  * Create an object representing functions that can be called remotely
  *  
- * @param rootObject	- the object containing the functions to make available remotely 
+ * @param obj	- the object containing the functions to make available remotely
+ * @param opts	- options:
+ *		serializer(api,req,res)	- A function that returns a function which can be passed to JSON.stringify() to modify network responses befire they are sent  		 
  */
 function ApiPublisher(obj,opts) {
 	var that = this ;
 	that.api = {} ;
 	that.names = {} ;
 	that.opts = opts || {};
+	that.context = obj ;
 
 	for (var i in obj) if (obj.hasOwnProperty(i)){
 		if (typeof obj[i] == 'function') {
-			that.api[i] = {fn:obj[i],context:obj} ;
+			that.api[i] = {fn:obj[i]/*,context:obj*/} ;
 			that.names[i] = { parameters: obj[i].length } ; // Remote call info 
 			try {
 				that.names[i].parameters = obj[i].toString().match(/[^(]*(\(.*\))/)[1] ;
@@ -49,7 +52,7 @@ function ApiPublisher(obj,opts) {
  * @param req
  * @param ok
  */
-ApiPublisher.prototype.getRemoteApi = function(req,ok,path) {
+ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 	var self = this ;
 	if (path)
 		self.path = path ;
@@ -64,7 +67,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,ok,path) {
 				}
 				fn.apply({request:req},fn.clientInstance)(function(instanceData){
 					if (instanceData instanceof ApiPublisher) {
-						 instanceData.getRemoteApi(req, ok, e) ;
+						 instanceData.getRemoteApi(req, e, ok) ;
 					} else {
 						ok(instanceData) ;
 					}
@@ -77,10 +80,6 @@ ApiPublisher.prototype.getRemoteApi = function(req,ok,path) {
 	(ok,$error) ;
 };
 
-function getConstructor(v) {
-	return (v && (typeof v==='object') && !Array.isArray(v) && v.constructor && v.constructor.name && v.constructor.name!='Object') ? v.constructor.name : "" ; 
-}
-
 var stdHeaders = {
 		'Content-Type': 'application/json',
 		'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
@@ -90,10 +89,10 @@ var stdHeaders = {
 
 ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
 	var that = this ;
-	this.getRemoteApi(req,function(instance){
+	this.getRemoteApi(req,null,function(instance){
 		rsp.writeHead(200, stdHeaders);
-		rsp.end(JSON.stringify(instance,that.opts.serialClassification(req.apiVersion)));
-	},$error) ;
+		rsp.end(JSON.stringify(instance)) ; //,that.opts.serializer && that.opts.serializer(that,req,rsp)));
+	}) ;
 };
 
 /**
@@ -105,12 +104,12 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	// test the body type
 	var args = (req.body instanceof Array) ? req.body:[req.body] ; // Wasn't a JSON encoded argument list, so wrap it like it was
 	var tStart = Date.now() ;
-	var sendReturn = function(result){
+	function sendReturn(result){
 		if (rsp.headersSent) {
 			DEBUG(99,"Response already sent",name,args,result) ;
 		} else {
 			rsp.writeHead(result.status || 200, stdHeaders);
-			var json = JSON.stringify(result.value,that.opts.serialClassification(req.apiVersion)) ;
+			var json = JSON.stringify(result.value,that.opts.serializer && that.opts.serializer(that,req,rsp)) ;
 			if (result.status>=500) {
 				DEBUG(28,"5xx Response: ",req.session, json) ;
 			}
@@ -119,32 +118,32 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		}
 	} ;
 	
-	var returnCB = function(t,status) {
+	function returnCB(t,status) {
 		sendReturn({value:t,status:status});
 	};
-	returnCB.error = function(err,details) {
+	function errorCB(err,details) {
 		DEBUG(details?29:20,err,details) ;
 		sendReturn({value:err,status:500});
 	} ;
 
 	if (!this.api[name]) {
-		return returnCB.error(new Error("Endpoint not found: "+name),404) ;
+		return errorCB(new Error("Endpoint not found: "+name),404) ;
 	}
 		
 	// Augment "this" with the current request so the remoted API can query session
 	// info etc.
-	var context = Object.create(this.api[name].context) ;
-	context.request = req ;
+	var context = Object.create(this.context/*api[name].context*/,{ request:{value:req} }) ; 
+	//context.request = req ;
 	
 	// Because functions without an object do not have any useful scope, we also hide
 	// the request in the return object so it's easy to pick up
-	returnCB.req = req ;
+	// returnCB.req = req ;
 	
 	var fn = this.api[name].fn ;
 	if (fn[req.apiVersion])
 		fn = fn[req.apiVersion] ; 
 	
-	fn.apply(context,args)(returnCB,returnCB.error) ;
+	fn.apply(context,args)(returnCB,errorCB) ;
 };
 
 /**
@@ -173,13 +172,6 @@ ApiPublisher.prototype.handle = function(){
 			remoted.callRemoteApi(decodeURIComponent(path.pop()),req,rsp) ;	// Client is making a remote call
 		}
 	} ;
-};
-
-ApiPublisher.jsonReviver = function(k,v){
-	// Strip off the class marker
-	if (k=='\u00A9' || k=="_clz")
-		return undefined ;
-	return v ;
 };
 
 module.exports = ApiPublisher;
