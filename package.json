@@ -1,5 +1,5 @@
 {
-  "name": "ApiPublisher",
+  "name": "apipublisher",
   "version": "0.1.5",
   "description": "Async JS API remoting",
   "main": "index.js",
