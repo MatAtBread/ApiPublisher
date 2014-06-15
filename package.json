@@ -1,6 +1,6 @@
 {
   "name": "ApiPublisher",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Async JS API remoting",
   "main": "index.js",
   "scripts": {
@@ -8,6 +8,9 @@
   },
   "dependencies": {
     "nodent": "0.1.x"
+  },
+  "devDependencies": {
+    "connect": "2.x.x"
   },
   "repository": {
     "type": "git",

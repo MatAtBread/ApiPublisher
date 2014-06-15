@@ -8,7 +8,7 @@
  */
 
 var async = require('nodent')({use:['async']}).async ;
-var DEBUG = global.DEBUG || function(){ console.log.apply(this,arguments); } ;
+var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
 
 /**
  * Create an object representing functions that can be called remotely
@@ -26,7 +26,7 @@ function ApiPublisher(obj,opts) {
 
 	for (var i in obj) if (obj.hasOwnProperty(i)){
 		if (typeof obj[i] == 'function') {
-			that.api[i] = {fn:obj[i]/*,context:obj*/} ;
+			that.api[i] = {fn:obj[i]} ;
 			that.names[i] = { parameters: obj[i].length } ; // Remote call info 
 			try {
 				that.names[i].parameters = obj[i].toString().match(/[^(]*(\(.*\))/)[1] ;
@@ -130,20 +130,19 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		return errorCB(new Error("Endpoint not found: "+name),404) ;
 	}
 		
-	// Augment "this" with the current request so the remoted API can query session
+	// Proto-augment "this" with the current request so the remoted API can query session
 	// info etc.
-	var context = Object.create(this.context/*api[name].context*/,{ request:{value:req} }) ; 
-	//context.request = req ;
+	var context = that.proxyContext(name,req,rsp) ;
 	
-	// Because functions without an object do not have any useful scope, we also hide
-	// the request in the return object so it's easy to pick up
-	// returnCB.req = req ;
-	
-	var fn = this.api[name].fn ;
+	var fn = that.api[name].fn ;
 	if (fn[req.apiVersion])
 		fn = fn[req.apiVersion] ; 
 	
 	fn.apply(context,args)(returnCB,errorCB) ;
+};
+
+ApiPublisher.prototype.proxyContext = function(name,req,rsp) {
+	return Object.create(this.context,{ request:{value:req} }) ;
 };
 
 /**

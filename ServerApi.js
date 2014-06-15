@@ -4,7 +4,7 @@
 var http = require('http') ;
 var URL = require('url') ;
 
-var DEBUG = global.DEBUG || function(){} ;
+var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
 
 function getOwnPropertyDescriptions(obj) {
 	var d = {};

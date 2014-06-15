@@ -60,17 +60,30 @@ window.RemoteApi = (function(){
 			}
 		}
 
+		var that = this ;
+
 		if (typeof options==='function') {
 			onLoad = options ;
 			options = {} ;
 		} else if (!options)
 			options = {} ;
-		options.version = options.version || 3 ;	// <-- Default ApiVersion 
+		if (!options.version) {
+			var path = url.split("/") ;
+			if (path[path.length-1]=="")
+				path.pop(); // Strip any trailing "/"
+			var version = Number(path[path.length-1].match(/^[0-9.]+$/)) ; 
+			if (version && !isNaN(version)) {
+				path.pop() ; // Strip the version number
+			} else {
+				version = this.defaultVersion() ;	// <-- Default ApiVersion
+			}
+			url = path.join("/") ;
+			options.version = version ;
+		}
 			
 		this.options = options ;
 		if (!onLoad)
 			onLoad = this.onLoad ;
-		var that = this ;
 
 		function loadApi(url,api){
 			Object.keys(api).forEach(function(i) {
@@ -83,7 +96,7 @@ window.RemoteApi = (function(){
 					var staticVal = that.options.reviver?that.options.reviver()("",api[i]):api[i] ; 
 					that[i] = function() {
 						return function(ok,error) {
-							return ok(staticVal) ;
+							return (ok || that.onSuccess)(staticVal) ;
 						} ;
 					} ;
 				}
@@ -123,7 +136,8 @@ window.RemoteApi = (function(){
 		onError:function(xhr){},
 		onLoad:function(errorXHR){},
 		apiStart:function(path,name,args,data){},
-		apiEnd:function(path,name,args,data){}
+		apiEnd:function(path,name,args,data){},
+		defaultVersion:function(){ return "" }
 	} ;
 
 	RemoteApi.load = function(url,options) {
