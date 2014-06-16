@@ -68,7 +68,8 @@ window.RemoteApi = (function(){
 		} else if (!options)
 			options = {} ;
 		if (!options.version) {
-			var path = url.split("/") ;
+			var path = typeof url=="function"?url.remoteName:url ;
+			path = path.split("/") ;
 			if (path[path.length-1]=="")
 				path.pop(); // Strip any trailing "/"
 			var version = Number(path[path.length-1].match(/^[0-9.]+$/)) ; 
