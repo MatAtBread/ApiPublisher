@@ -1,7 +1,7 @@
 ApiPublisher
 ============
 
-ApiPublisher is a simple framnework to extend asynchronous func-back signiture calls across over HTTP. Tested clients exist for NodeJS and web-browsers, and a publisher (server) for NodeJS. The goal of ApiPublisher is provide an identical asynchronous API across clients and servers so that dependent routines can execute at any location without modification.
+ApiPublisher is a simple framework to extend asynchronous "funcback" signature calls across over HTTP. Tested clients exist for NodeJS and web-browsers, and a publisher (server) for NodeJS. The goal of ApiPublisher is provide an identical asynchronous API across clients and servers so that dependent routines can execute at any location without modification.
 
 ApiPublisher works with Connect, Express and Nodent [https://www.npmjs.org/package/nodent] seamlessly.
 
@@ -48,12 +48,12 @@ and declares as:
 		return success(...result...) ;
 	}
 
-Full details can be found at [https://www.npmjs.org/package/nodent]. Note the use of Nodent to generate func-back patterned calls is entirely optional. Within this README, Nodent is used for the example for brevity.
+Full details can be found at [https://www.npmjs.org/package/nodent]. Note the use of Nodent to generate funcback patterned calls is entirely optional. Within this README, Nodent is used for the example for brevity.
 
 Declaring an API for remoting
 -----------------------------
 
-Simply collect together the func-back calls in an object:
+Simply collect together the funcback calls in an object:
 	var myAPI = {
 		doSearch:async-function(term) {
 			var result = {} ; 
@@ -71,7 +71,7 @@ This API can be called locally (of course), for example:
 	results <<= myAPI.doSearch("Hello") ;
 
 To expose the APIs in nodejs, create a new ApiPublisher from your object and server it from the URL of your choice.
-	var ApiPublisher = require("ApiPublisher").ApiPublisher ; // Allow APIs to be exposed
+	var ApiPublisher = require("apipublisher").ApiPublisher ; // Allow APIs to be exposed
 		...
 	var publishedApi = new ApiPublisher(myAPI) ;
 		...
@@ -79,7 +79,7 @@ To expose the APIs in nodejs, create a new ApiPublisher from your object and ser
 	app.use(connect.json())	// Published APIs expect JSON encoded bodeis
 		.use("/api", publishedApi)  ;
 // Iff we want to make the API available to browsers, also expose the RemoteApi script for them to load
-	app.use("/js/RemoteApi.js", require("ApiPublisher").sendRemoteApi) ;
+	app.use("/js/RemoteApi.js", require("apipublisher").sendRemoteApi) ;
 		...
 	http.createServer(app).listen(7999);
 
@@ -90,7 +90,7 @@ Calling a remote API from nodejs
 
 To call a published API from node, require the ServerApi, and initialise it from the remote URI :
 
-	var ServerApi = require("ApiPublisher").ServerApi ; // Allow APIs to be called
+	var ServerApi = require("apipublisher").ServerApi ; // Allow APIs to be called
 		...
 	api <<= ServerApi.load("http://example.com/api") ;
 		...
@@ -100,7 +100,7 @@ To call a published API from node, require the ServerApi, and initialise it from
 		result <<= api.doSearch("Hello") ;
 	}
 
-Note tha API is called with exactly the same syntax, semantics and parameters as if it had be called locally (see above).
+Note the API is called with exactly the same syntax, semantics and parameters as if it had be called locally (see above).
 
 Call a remote API from a browser
 --------------------------------
@@ -146,7 +146,7 @@ Using Nodent's "generateRequestHandler" to make the browser scripts more readabl
 Example
 ========
 
-A full example of a nodejs-based published API, API client and browser client can be in the /test directory of the ApiPublisher package. 
+A full example of a nodejs-based published API, nodejs API client and browser client can be in the /test directory of the ApiPublisher package. 
 
 To start the API server:
 	node server.js
@@ -187,62 +187,171 @@ Overriding this behaviour allows for other variables to take part in remote API 
 	var httpServer = http.createServer(app) ;
 	var publishedApi = new ApiPublisher(myAPI) ;
 	// For our API, we want to expose the server too.
-	publishedApi.proxyContext = functionfunction(name,req,rsp) {
+	publishedApi.proxyContext = function(name,req,rsp) {
 		return Object.create(this.context,{ request:{value:req}, server:{value:httpServer} }) ;
 	}
 
 ApiPublisher.prototype.serializer(req,rsp)
 ------------------------------------------
-Asyncronous returns and API definitions are returned in JSON format using the standard node JSON.stringify. This value is passed as the second parameter to JSON.stringify to allow for processing of returns at the "transport" layer, as opposed to the logical, API layer. For example, to include a class marker in all top-level responses:
+Asynchronous returns and API definitions are returned in JSON format using the standard node JSON.stringify. This value is passed as the second parameter to JSON.stringify to allow for processing of returns at the "transport" layer, as opposed to the logical, API layer. For example, to include a class marker in all top-level responses:
 
 	var publishedApi = new ApiPublisher(myAPI) ;
 	// For our API, we want to expose the server too.
-	publishedApi.serializer = functionfunction(req,rsp) {
+	publishedApi.serializer = function(req,rsp) {
 		return function(key,value) {
 			if (key=="" && value && value.constructor && value.constructor.name)
 				value['\u00A9'] = value.constructor.name ;
 		}
 	}
 	
-The request and response are passed to the serializer to enable responses to be modifed depending on (for example) security checks, client type, etc.
+The request and response are passed to the serializer to enable responses to be modified depending on (for example) security checks, client type, etc.
 
 The default implement does simple JSON serialization with no modification.
 
 ServerApi options and prototype
 ===============================
 
-ServerApi.prototype.onSuccess 
------------------------------
-ServerApi.prototype.onError 
----------------------------
+ServerApi.prototype.onSuccess(result) 
+-------------------------------------
+Called if a remote API is called with a null or undefined success callback.
+
+ServerApi.prototype.onError(error) 
+----------------------------------
+Called if a remote API is called with a null or undefined error callback.
+
 ServerApi.prototype.headers 
 ---------------------------
-ServerApi.prototype.serializer 
-------------------------------
-ServerApi.prototype.reviver
----------------------------
+An object containing key-value pairs to be sent as HTTP headers with every request. Headers are unused by ApiPublisher itself, and should be considered "out of band" and used (for example) for session management.
+
+ServerApi.prototype.serializer(key,value)
+-----------------------------------------
+Standard JSON serializer routine used to serialize remote API function arguments before being sent to the server.
+
+ServerApi.prototype.reviver(key,value)
+--------------------------------------
+Standard JSON reviver routine used to de-serialize remote API function results & errors before being passed to the asynchronous callee.
 
 RemoteApi options and prototype
 ===============================
 
-RemoteApi.load
+The RemoteApi scripts accepts the same prototype overrides as the ServerApi (above), and the following additional prototypes:
 
-RemoteApi.prototype.onSuccess:function(result){},
-RemoteApi.prototype.onError:function(xhr){},
-RemoteApi.prototype.apiStart:function(path,name,args,data){},
-RemoteApi.prototype.apiEnd:function(path,name,args,data){},
-RemoteApi.prototype.version:"",
-RemoteApi.prototype.reviver:null,
-RemoteApi.prototype.serializer:null,
-RemoteApi.prototype.headers:null
+RemoteApi.prototype.apiStart:function(path,name,args,data)
+----------------------------------------------------------
+Called before every remote API call is sent over the network. Useful for debugging and providing UI feedback that a network operation is underway.
+
+RemoteApi.prototype.apiEnd:function(path,name,args,data)
+--------------------------------------------------------
+Called after every remote API call has responded, but before the callee is called-back. Useful for debugging and providing UI feedback that a network operation has finished.
+
+RemoteApi.prototype.version
+---------------------------
+See the section below on versioning
+
+RemoteApi.load(url,options)
+---------------------------
+An optional "options" object can be used to override the prototypes at creation time, for example:
+
+	myApi <<= RemoteApi.load("/api",{
+		version:3,
+		headers:{"X-Requested-With":"BreadBaker/1.3"},
+		onError:function(e){
+			alert("Oops!\n\n"+e.message) ;
+		}
+	}) ;
 
 Versioning
 ==========
+In general, since the APIs and scripts calling them are delivered by the same server, there is no reason to worry about versioning since the API implementation on the server can only be called by a client that has the script delivered from the same source (with the exception of cached scripts, etc). However, it is useful to be able to version APIs in complex, clustered environemnets, or where the client code has not been delivered by the server - for example Hybrid mobile applications where "RemoteApi.js" and the application API on top have been shipped independently and are not readily updatable.
+
+ApiPublisher supports versioning of the API at the server via the loadable URL. By default all APIs are requested (and provided) as "latest" - no version number is supplied by the client and none is used by the server.
+
+Consider the following API:
+
+	myApi.getUserName = async-function() {
+		var user = readUserFromDB(this.request.session.uid) ;
+		return user.firstName+" "+user.lastName ;
+	}
+
+Accessible (as usual) at "/api/getUserName".
+
+We subsequently decide to provider a more detailed return:	
+
+	myApi.getUserName = async-function() {
+		var user = readUserFromDB(this.request.session.uid) ;
+		return {name:user.firstName+" "+user.lastName,
+			firstName:user.firstName,
+			lastName:user.lastName} ;
+	}
+
+Clearly, this will break all existing clients which expect the old-style return. We can support both versions as follows:
+
+	// "Latest" version
+	myApi.getUserName = async-function() {
+		var user = readUserFromDB(this.request.session.uid) ;
+		return {name:user.firstName+" "+user.lastName,
+			firstName:user.firstName,
+			lastName:user.lastName} ;
+	}
+
+	// Old version:
+	myApi.getUserName[1] = async-function() {
+		user = this.getUserName() ;
+		return user.firstName+" "+user.lastName ;	// Old style - just a string
+	}
+
+This versioned API will be accessible at "/api/getUserName/1". To support this from clients which do not update automatically (i.e. where the code has shipped and is fixed, such as mobile applications), a version can be passed to both ServerApi and RemoteApi within the URL:
+
+	api <<= RemoteApi.load("http://example.com/api/1") ;
+
+This "fixes" the API at version "1". Note: version numbers must be integers greater than zero.
 
 "clientInstance"
 ================
+Remote API calls that are "static", unchanging or fixed for a reasonable period of time (such as for the duration of a session) can have their results transported in the initial API call, rather than on every invokation. To acheive this, on the server side the API call should have a property called "clientInstance" set to the argument list suitable for the call. Continuing the example above:
+
+	myApi.getUserName.clientInstance = [] ; // getUserName doesn't take any arguments
+
+When the API is accessed via the URL "/api/getUserName", rather than transport the call information, the function is invoked directly and the result serialized instead, but is still callable from the client using the same API signature:
+
+	name <<= api.getUserName() ;
+or
+	api.getUserName()(function(name){ ... }) ;
+
+These calls, although they look identical won't require a network round trip as they are sent in the inital API.
 
 Nested APIs
 ===========
+An API can include another API, allowing for conditional nesting, for example:
+
+	myApi = {
+		loginUser:async-function(uid,pwd) { .... }
+		userApi: async-function() {
+			if (request.session.user) {
+				var api = {
+					getUserName:async-function(){ ... },
+					changeUserName:async-function(newName) { ... }
+				} ;
+				api.getUserName.clientInstance = [] ;
+				return new ApiPublisher(api) ;
+			} else {
+				return null ;
+			}
+		}
+	} ;
+
+	myApi.userApi = clientInstance = [] ;
+
+In this example, if a call is made to "/myApi", the return API will contain a nest API iff. the request has been authenticated by some mechanism that has set a session. Without authenication, 
+	"/myApi/userApi" responds with null
+which can be tested in the client:
+
+	api <<= RemoteApi.load("/myApi") ;
+	if (!api.userApi)
+		alert("You need to login first") ;
+	else {
+		name = api.userApi.getUserName() ;
+		alert("Hello "+name) ;
+	}
 
 
