@@ -14,14 +14,11 @@ var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(thi
  * Create an object representing functions that can be called remotely
  *  
  * @param obj	- the object containing the functions to make available remotely
- * @param opts	- options:
- *		serializer(api,req,res)	- A function that returns a function which can be passed to JSON.stringify() to modify network responses befire they are sent  		 
  */
-function ApiPublisher(obj,opts) {
+function ApiPublisher(obj) {
 	var that = this ;
 	that.api = {} ;
 	that.names = {} ;
-	that.opts = opts || {};
 	that.context = obj ;
 
 	for (var i in obj) if (obj.hasOwnProperty(i)){
@@ -91,7 +88,7 @@ ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
 	var that = this ;
 	this.getRemoteApi(req,null,function(instance){
 		rsp.writeHead(200, stdHeaders);
-		rsp.end(JSON.stringify(instance,that.opts.serializer && that.opts.serializer(that,req,rsp)));
+		rsp.end(JSON.stringify(instance,that.serializer(req,rsp)));
 	}) ;
 };
 
@@ -109,7 +106,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 			DEBUG(99,"Response already sent",name,args,result) ;
 		} else {
 			rsp.writeHead(result.status || 200, stdHeaders);
-			var json = JSON.stringify(result.value,that.opts.serializer && that.opts.serializer(that,req,rsp)) ;
+			var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
 			if (result.status>=500) {
 				DEBUG(28,"5xx Response: ",req.session, json) ;
 			}
@@ -145,6 +142,10 @@ ApiPublisher.prototype.proxyContext = function(name,req,rsp) {
 	return Object.create(this.context,{ request:{value:req} }) ;
 };
 
+ApiPublisher.prototype.serializer = function(req,rsp) {
+	return null ;
+};
+
 /**
  * Handle an Api request
  *
@@ -155,22 +156,19 @@ ApiPublisher.prototype.proxyContext = function(name,req,rsp) {
  * "/getInfo/2" call version 2 of the getInfo() function
  */
 
-ApiPublisher.prototype.handle = function(){
-	var remoted = this ;
-	return function(req,rsp,next) {
-		var url = req.url.toString() ;
-		var path = url.split("/") ;
-		if (path[path.length-1]=="")
-			path.pop(); // Strip any trailing "/"
-		req.apiVersion = Number(path[path.length-1].match(/^[0-9.]+$/)) ; 
-		if (req.apiVersion>0)
-			path.pop() ; // Strip the version number
-		if (path.length<2 || path[1]=="") {
-			remoted.sendRemoteApi(req,rsp) ;
-		} else {
-			remoted.callRemoteApi(decodeURIComponent(path.pop()),req,rsp) ;	// Client is making a remote call
-		}
-	} ;
-};
+ApiPublisher.prototype.handle = function(req,rsp,next) {
+	var url = req.url.toString() ;
+	var path = url.split("/") ;
+	if (path[path.length-1]=="")
+		path.pop(); // Strip any trailing "/"
+	req.apiVersion = Number(path[path.length-1].match(/^[0-9.]+$/)) ; 
+	if (req.apiVersion>0)
+		path.pop() ; // Strip the version number
+	if (path.length<2 || path[1]=="") {
+		this.sendRemoteApi(req,rsp) ;
+	} else {
+		this.callRemoteApi(decodeURIComponent(path.pop()),req,rsp) ;	// Client is making a remote call
+	}
+} ;
 
 module.exports = ApiPublisher;

@@ -4,7 +4,8 @@ var http = require('http') ;
 var connect = require('connect');
 var fs = require('fs');
 
-var ApiPublisher = require('../index').ApiPublisher ;
+var remoteApi = require('../index') ; // Change to "ApiPublisher" in release
+var ApiPublisher = remoteApi.ApiPublisher ;
 
 /* Our test API */
 var testApi = require('./testapi') ;
@@ -17,7 +18,10 @@ var app = connect()
 
 	// Remote APIs available under "/testapi", e.g. the descriptor is 
 	// at "/testapi" and the "delay" function in "/testapi/delay"
-	.use("/testapi",api.handle())				
+	.use("/testapi",api)			
+	
+	// Give browser access to the remote API loader
+	.use("/RemoteApi.js",remoteApi.sendRemoteApi)				
 	
 	// Parse & cache .njs files on demand (nothing to do with ApiPublisher, 
 	// just a simple example of nodent compiled on the server for use in 
@@ -25,9 +29,7 @@ var app = connect()
 	.use(nodent.generateRequestHandler('./web',null,{enableCache:true}))
 	
 	// Static files for the web-browser test
-	// RemoteApi.js (in ../www) should probably be copied/symlink'd in a real world example
-	.use(connect.static('./web',{maxAge:0})) 	 
-	.use(connect.static('../www',{maxAge:0})) ;	
+	.use(connect.static('./web',{maxAge:0})); 	 
 
 http.createServer(app).listen(1966) ;
 

@@ -6,10 +6,21 @@
  *
  */
 
+var fs = require("fs") ;
+
 var ApiPublisher = require("./ApiPublisher") ;
 var ServerApi = require("./ServerApi") ;
+var remoteApiPath = __dirname+"/www/RemoteApi.js" ; 
+
+function sendRemoteApi(req,res,next) {
+    res.writeHead(200, {'Content-Type': 'application/javascript'} );
+    fs.createReadStream(remoteApiPath).pipe(res);
+}
+
 
 module.exports = {
 	ApiPublisher:ApiPublisher,
-	ServerApi:ServerApi
+	ServerApi:ServerApi,
+	sendRemoteApi:sendRemoteApi,
+	remoteApiPath:remoteApiPath
 } ;
