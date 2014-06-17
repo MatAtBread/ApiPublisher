@@ -143,7 +143,7 @@ ApiPublisher.prototype.proxyContext = function(name,req,rsp) {
 };
 
 ApiPublisher.prototype.serializer = function(req,rsp) {
-	return null ;
+	return function() { return null } ;
 };
 
 /**
