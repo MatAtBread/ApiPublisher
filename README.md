@@ -42,18 +42,19 @@ Using Nodent these can be called as:
 
 	success <<= myAsyncFunction(...arguments...) ;
 
-and declares as:
+and declared as:
 
 	async-function myAsyncFunction(...arguments...) {
 		return success(...result...) ;
 	}
 
-Full details can be found at [https://www.npmjs.org/package/nodent]. Note the use of Nodent to generate funcback patterned calls is entirely optional. Within this README, Nodent is used for the example for brevity.
+Full details can be found at [https://www.npmjs.org/package/nodent]. Note the use of Nodent to generate funcback patterned calls is entirely optional. Within this README, Nodent is used in some of the examples for brevity.
 
 Declaring an API for remoting
 -----------------------------
 
 Simply collect together the funcback calls in an object:
+
 	var myAPI = {
 		doSearch:async-function(term) {
 			var result = {} ; 
@@ -71,13 +72,15 @@ This API can be called locally (of course), for example:
 	results <<= myAPI.doSearch("Hello") ;
 
 To expose the APIs in nodejs, create a new ApiPublisher from your object and server it from the URL of your choice.
+
 	var ApiPublisher = require("apipublisher").ApiPublisher ; // Allow APIs to be exposed
 		...
 	var publishedApi = new ApiPublisher(myAPI) ;
 		...
 	var app = connect();	// This example uses Sencha Connect
-	app.use(connect.json())	// Published APIs expect JSON encoded bodeis
+	app.use(connect.json())	// Published APIs expect a JSON encoded request.body
 		.use("/api", publishedApi)  ;
+	
 // Iff we want to make the API available to browsers, also expose the RemoteApi script for them to load
 	app.use("/js/RemoteApi.js", require("apipublisher").sendRemoteApi) ;
 		...
