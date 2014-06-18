@@ -12,9 +12,14 @@ var ApiPublisher = require("./ApiPublisher") ;
 var ServerApi = require("./ServerApi") ;
 var remoteApiPath = __dirname+"/www/RemoteApi.js" ; 
 
+var remoteApiContent ;
+
 function sendRemoteApi(req,res,next) {
     res.writeHead(200, {'Content-Type': 'application/javascript'} );
-    fs.createReadStream(remoteApiPath).pipe(res);
+    if (!remoteApiContent) {
+    	remoteApiContent = fs.readFileSync(remoteApiPath) ;
+    }
+    res.end(remoteApiContent) ;
 }
 
 
