@@ -68,16 +68,19 @@ window.RemoteApi = (function(){
 			}) ;
 		}
 		
-		var path = typeof url=="function"?url.remoteName:url ;
-		path = path.split("/") ;
-		if (path[path.length-1]=="")
-			path.pop(); // Strip any trailing "/"
-		var version = Number(path[path.length-1].match(/^[0-9.]+$/)) ; 
-		if (version && !isNaN(version)) {
-			path.pop() ; // Strip the version number
-			this.version = version ;
+		if (typeof url!="function") {
+			var path = url ;
+			path = path.split("/") ;
+			if (path[path.length-1]=="")
+				path.pop(); // Strip any trailing "/"
+			var version = Number(path[path.length-1].match(/^[0-9.]+$/)) ; 
+			if (version && !isNaN(version)) {
+				path.pop() ; // Strip the version number
+				this.version = version ;
+			}
+			url = path.join("/") ;
 		}
-		url = path.join("/") ;
+		
 			
 		if (!onLoad)
 			onLoad = function(){} ;
@@ -97,7 +100,7 @@ window.RemoteApi = (function(){
 						} ;
 					} ;
 				}
-				that[i].remoteName = url+"/"+i ; 
+				that[i].remoteName = url+"/"+i+"/"+that.version ; 
 			}) ;
 			onLoad.call(that,null) ;
 		}
