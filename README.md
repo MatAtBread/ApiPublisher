@@ -50,6 +50,10 @@ and declared as:
 
 Full details can be found at [https://www.npmjs.org/package/nodent]. Note the use of Nodent to generate funcback patterned calls is entirely optional. Within this README, Nodent is used in some of the examples for brevity.
 
+Changelog
+=========
+26Jun14	Fix issue where nested APIs are called with the version number in the incorrect position within remote URL
+
 Declaring an API for remoting
 -----------------------------
 

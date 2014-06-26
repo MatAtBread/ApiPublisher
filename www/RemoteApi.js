@@ -100,7 +100,7 @@ window.RemoteApi = (function(){
 						} ;
 					} ;
 				}
-				that[i].remoteName = url+"/"+i+"/"+that.version ; 
+				that[i].remoteName = url+"/"+i ; 
 			}) ;
 			onLoad.call(that,null) ;
 		}
