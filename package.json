@@ -1,6 +1,6 @@
 {
   "name": "apipublisher",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "Async JS API remoting",
   "main": "index.js",
   "scripts": {

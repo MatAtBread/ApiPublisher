@@ -123,7 +123,7 @@ window.RemoteApi = (function(){
 			setInterval(function(){
 				var now = Date.now() ;
 				Object.keys(api).forEach(function(i) {
-					if (api[i].cache)
+					if (api[i] && api[i].cache)
 						for (var k in api[i].cache)
 							if (((Date.now()-api[i].cache[k].t)/1000) >= api[i].ttl.t) 
 								delete api[i].cache[k] ;
