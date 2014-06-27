@@ -5,15 +5,16 @@ window.RemoteApi = (function(){
 		if (o===undefined) return "undefined" ;
 		if (o===null) return "null" ;
 		if (typeof o==="object"){
+			var h = "";
+			Object.keys(o).forEach(function(k) { h += hash(o[k])}) ;
+			return hash(h) ;
+		} else {
 			var h = 0;
-			Object.keys(o).forEach(function(k) { h = h ^ hash(o[k])}) ;
-			return h ;
+			var s = o.toString() ;
+	        for (var i=0; i<s.length; i++)
+	            h = (((h << 5) - h) + s.charCodeAt(i)) & 0xFFFFFFFF;
+	        return h.toString(36) ;
 		}
-		var s = o.toString() ;
-		var h = 0;
-        for (var i=0; i<s.length; i++)
-            h = (((h << 5) - h) + s.charCodeAt(i)) & 0xFFFFFFFF;
-        return h ;
 	}
 	
 	function cacheKey(args,incl) {
@@ -135,7 +136,7 @@ window.RemoteApi = (function(){
 						api[i].cache = {} ;
 						that[i] = function() {
 							var key = cacheKey(arguments,api[i].ttl.on) ;
-							if (key && api[i].cache[key] && (((Date.now()-api[i].cache[key].t)/1000) < api[i].ttl.t)) {
+							if (api[i].cache[key] && (((Date.now()-api[i].cache[key].t)/1000) < api[i].ttl.t)) {
 								return function(ok,error) {
 									that.log("Cache hit "+i) ;
 									return (ok || that.onSuccess)(api[i].cache[key].data) ;
