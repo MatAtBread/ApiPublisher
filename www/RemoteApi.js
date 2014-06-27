@@ -147,11 +147,11 @@ window.RemoteApi = (function(){
 								return cb(function(d){
 									that.log("Cache miss "+i) ;
 									api[i].cache[key] = {t:Date.now(),data:d} ;
-									return ok.apply(this,arguments)
+									return ok && ok.apply(this,arguments)
 								},function(e){ 
 									that.log("Cache err "+i) ;
 									delete api[i].cache[key] ;
-									return err.apply(this,arguments)
+									return err && err.apply(this,arguments)
 								}) ;
 							}
 						}
