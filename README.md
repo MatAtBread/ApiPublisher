@@ -53,6 +53,7 @@ Full details can be found at [https://www.npmjs.org/package/nodent]. Note the us
 Changelog
 =========
 27Jun14	Enable lazy caching (see below)
+
 26Jun14	Fix issue where nested APIs are called with the version number in the incorrect position within remote URL
 
 Declaring an API for remoting
