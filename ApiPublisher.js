@@ -30,6 +30,9 @@ function ApiPublisher(obj) {
 			} catch (ex) {
 				DEBUG(40,ex) ;
 			}
+			
+			if (obj[i].ttl)
+				that.names[i].ttl = obj[i].ttl ; // Remote call info 
 		}
 	}
 }

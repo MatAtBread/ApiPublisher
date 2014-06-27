@@ -52,6 +52,7 @@ Full details can be found at [https://www.npmjs.org/package/nodent]. Note the us
 
 Changelog
 =========
+27Jun14	Enable lazy caching (see below)
 26Jun14	Fix issue where nested APIs are called with the version number in the incorrect position within remote URL
 
 Declaring an API for remoting
@@ -245,17 +246,43 @@ RemoteApi options and prototype
 
 The RemoteApi scripts accepts the same prototype overrides as the ServerApi (above), and the following additional prototypes:
 
-prototype.apiStart:function(path,name,args,data)
+prototype.apiStart(path,name,args,data)
 ------------------------------------------------
 Called before every remote API call is sent over the network. Useful for debugging and providing UI feedback that a network operation is underway.
 
-prototype.apiEnd:function(path,name,args,data)
+prototype.apiEnd(path,name,args,data)
 ----------------------------------------------
 Called after every remote API call has responded, but before the callee is called-back. Useful for debugging and providing UI feedback that a network operation has finished.
+
+prototype.log(...)
+----------------------------------------------
+Called to provide tracing/debugging support. The default implementation does nothing.
 
 prototype.version
 -----------------
 See the section below on versioning
+
+prototype.version
+-----------------
+See the section below on versioning
+
+RemoteApi.noLazyCache
+---------------------
+If thruthy, disables lazy caching of remote API results.
+
+RemoteApi.cacheSweepInterval
+----------------------------
+The period, in milliseconds, between throwing out old, cached responses. By default the value is 1 minute.
+
+(remoteapi).clearCache()
+----------------------
+For browser use, results can be cached (see Lazy Caching below). Every API has a method "clearCache" to discard any cached results and force a network call. For example:
+
+	api <<= RemoteApi.load("/apiExposed") ;
+	api.loginUser.clearCache() ;
+	result <<= api.loginUser("mat","atbread") ;
+
+Note that all functions have a "clearCache" method, even if they are not cachable. In this case, the function does nothing.
 
 RemoteApi.load(url,options)
 ---------------------------
@@ -263,6 +290,7 @@ An optional "options" object can be used to override the prototypes at creation 
 
 	myApi <<= RemoteApi.load("/api",{
 		version:3,
+		noLazyCache:true,
 		headers:{"X-Requested-With":"BreadBaker/1.3"},
 		onError:function(e){
 			alert("Oops!\n\n"+e.message) ;
@@ -329,6 +357,60 @@ When the API is accessed via the URL "/api/getUserName", rather than transport t
 	api.getUserName()(function(name){ ... }) ;
 
 These calls, although they look identical won't require a network round trip as they are sent in the inital API.
+
+"clientInstance" calls are only supported by RemoteApi. ServerApi always makes the network round trip.
+
+Lazy Caching
+============
+For expensive network calls whose responses are not entirely dynamic, it is possible to cache responses in the client. In order to acheive this, add the following to your function declartation in the server:
+
+	myApi.getUserName = async-function() {
+		....
+		return name ;
+	}
+	/* Cache the response to this call for upto 60 seconds in the client */
+	myApi.getUserName.ttl = {t:60} ;	
+
+Unlike "clientInstance", at least one network call will be made to the remoted API, but the client will hold the result for the specified number of seconds, and repeated calls to the same API will re-present the previous result.
+
+Often, it is only useful to cache responses based on the arguments to the remote call. For example, a call to get a user's friends cannot re-present the same response for all users:
+
+	myApi.getFriends = async-function(userID) {
+		....
+		return friends ;
+	}
+	/* Cache the response to this call for upto 60 seconds in the client, dependent on argument 0 (userID) */
+	myApi.getFriends.ttl = {t:60,on:[0]} ;	
+
+This instructs the client to retain a different response for remote calls with a specific value for "userID", so:
+
+	friendsOfMatt <<= api.getFriends("matt") ;
+	friendsOfAlex <<= api.getFriends("alex") ;
+	friendsOfMe <<= api.getFriends("matt") ;
+
+...will make 2 network calls, (one for "matt", one for "alex") and store separate results in the cache.
+
+You can pick and choose which parameters should be used for the cache key:
+	
+	/* Cache, disregarding the parameters */
+	on:[] // (or null, or undefined) 
+
+	/* Cache, depending on parameter 0 and 2, ignoring the value of any other arguments */
+	on:[0,2] 
+
+	/* Cache depending on all parameters */
+	on:"*" 
+
+IMPORTANT: Don't use lazy caching for highly secure, important or personal data. The client cache key is derived from a hash of the arguments provided, and so the (unlikely) possibility exists that the local cache will re-present the results of a previous call even if the arguments to the call have changed. The hash key is based on the primitive values in the arguments, not any references, so code like the following example will cache.
+
+	var arg1 = {name:"alex"} ;	
+	var arg2 = {name:"alex"} ;	
+	x <<= api.findUser(arg1) ;	// Network trip & cache
+	x <<= api.findUser(arg2) ;	// Different argument, same values - cached response used
+	arg1.id = "123456" ;
+	x <<= api.findUser(arg1) ;	// Network trip - same argument (arg1), but values are different
+
+Lazy Caching is only supported by RemoteApi. ServerApi always makes the network round trip.
 
 Nested APIs
 ===========

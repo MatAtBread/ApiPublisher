@@ -1,10 +1,43 @@
 window.RemoteApi = (function(){
+	function Nothing(){} ;
+
+	function hash(o) {
+		if (o===undefined) return "undefined" ;
+		if (o===null) return "null" ;
+		if (typeof o==="object"){
+			var h = 0;
+			Object.keys(o).forEach(function(k) { h = h ^ hash(o[k])}) ;
+			return h ;
+		}
+		var s = o.toString() ;
+		var h = 0;
+        for (var i=0; i<s.length; i++)
+            h = (((h << 5) - h) + s.charCodeAt(i)) & 0xFFFFFFFF;
+        return h ;
+	}
+	
+	function cacheKey(args,incl) {
+		// Key on no args
+		if (!incl || !incl.length)
+			return "." ;
+
+		// Key on all args
+		if (incl=="*") {
+			return hash(Array.prototype.slice.call(args)) ;
+		}
+		
+		// Key onspecific args
+		var src = [] ;
+		for (var i=0; i<incl.length; i++)
+			src.push(args[incl[i]]) ;
+		return hash(src) ;
+	}
+	
 	function setHeaders(x,headers) {
 		if (headers)
 			for (var name in headers) 
-				if (headers.hasOwnProperty(name) && typeof headers[name]!='undefined') {
+				if (headers.hasOwnProperty(name) && typeof headers[name]!='undefined')
 					x.setRequestHeader(name,headers[name]) ;
-				}
 	}
 
 	function RemoteApi(url,options,onLoad) {
@@ -86,10 +119,50 @@ window.RemoteApi = (function(){
 			onLoad = function(){} ;
 
 		function loadApi(url,api){
+			setInterval(function(){
+				var now = Date.now() ;
+				Object.keys(api).forEach(function(i) {
+					if (api[i].cache)
+						for (var k in api[i].cache)
+							if (((Date.now()-api[i].cache[k].t)/1000) >= api[i].ttl.t) 
+								delete api[i].cache[k] ;
+				}) ;
+			},that.cacheSweepInterval || 60000) ;
+			
 			Object.keys(api).forEach(function(i) {
 				if (api[i] && api[i].parameters) {
-					that[i] = function() { 
-						return callRemoteFuncBack(this,url,i,arguments) ; 
+					if (!that.noLazyCache && api[i].ttl) {
+						api[i].cache = {} ;
+						that[i] = function() {
+							var key = cacheKey(arguments,api[i].ttl.on) ;
+							if (key && api[i].cache[key] && (((Date.now()-api[i].cache[key].t)/1000) < api[i].ttl.t)) {
+								return function(ok,error) {
+									that.log("Cache hit "+i) ;
+									return (ok || that.onSuccess)(api[i].cache[key].data) ;
+								} ;
+							} 
+							var cb = callRemoteFuncBack(this,url,i,arguments) ;
+							return function(ok,err) {
+								return cb(function(d){
+									that.log("Cache miss "+i) ;
+									api[i].cache[key] = {t:Date.now(),data:d} ;
+									return ok.apply(this,arguments)
+								},function(e){ 
+									that.log("Cache err "+i) ;
+									delete api[i].cache[key] ;
+									return err.apply(this,arguments)
+								}) ;
+							}
+						}
+						that[i].clearCache = function() {
+							api[i].cache = {} ;
+						}
+					} else {
+						that[i] = function() {
+							that.log("Call "+i) ;
+							return callRemoteFuncBack(this,url,i,arguments) ; 
+						}
+						that[i].clearCache = Nothing ;
 					}
 					that[i].parameters = api[i].parameters ;
 				} else {
@@ -99,6 +172,7 @@ window.RemoteApi = (function(){
 							return (ok || that.onSuccess)(staticVal) ;
 						} ;
 					} ;
+					that[i].clearCache = Nothing ;
 				}
 				that[i].remoteName = url+"/"+i ; 
 			}) ;
@@ -139,7 +213,10 @@ window.RemoteApi = (function(){
 		version:"",
 		reviver:null,
 		serializer:null,
-		headers:null
+		headers:null,
+		log:function() {
+			//console.log.apply(console,arguments) ;
+		}
 	} ;
 
 	RemoteApi.load = function(url,options) {
