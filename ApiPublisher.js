@@ -19,6 +19,7 @@ function ApiPublisher(obj) {
 	var that = this ;
 	that.api = {} ;
 	that.names = {} ;
+	that.cache = {} ;
 	that.context = obj ;
 
 	for (var i in obj) if (obj.hasOwnProperty(i)){
@@ -35,6 +36,19 @@ function ApiPublisher(obj) {
 				that.names[i].ttl = obj[i].ttl ; // Remote call info 
 		}
 	}
+	
+	setInterval(function(){
+		var now = Date.now() ;
+		Object.keys(that.cache).forEach(function(k){
+			var j = Object.keys(that.cache[k]) ;
+			if (j && !j.length)
+				delete that.cache[k] ;
+			else j.forEach(function(e){
+				if (that.cache[k][j].expires < now)
+					delete that.cache[k][j] ;
+			}) ;
+		}) ;
+	},65536) ;
 }
 
 /**
@@ -95,6 +109,22 @@ ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
 	}) ;
 };
 
+function hash(o) {
+	if (o===undefined) return "undefined" ;
+	if (o===null) return "null" ;
+	if (typeof o==="object"){
+		var h = "";
+		Object.keys(o).forEach(function(k) { h += hash(o[k])}) ;
+		return hash(h) ;
+	} else {
+		var h = 0;
+		var s = o.toString() ;
+        for (var i=0; i<s.length; i++)
+            h = (((h << 5) - h) + s.charCodeAt(i)) & 0xFFFFFFFF;
+        return h.toString(36) ;
+	}
+}
+
 /**
  * Remote invocation of a local async funcback API. 
  **/
@@ -118,21 +148,41 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		}
 	} ;
 	
+	var cache = null, key = null ;
+	// Proto-augment "this" with the current request so the remoted API can query session
+	// info etc.
+	var context = that.proxyContext(name,req,rsp,args) ;
+
+	// Is this result cachable on the server?
+	if (that.names[name].ttl && that.names[name].ttl.server) {
+		key = hash(that.cacheObject(context)) ;
+		if (key) {
+			that.cache[name] = that.cache[name] || {} ;
+			cache = that.cache[name] ;
+			if (cache && cache[key] && cache[key].expires > Date.now()) {
+				return sendReturn({value:cache[key].data});
+			}
+		}
+	}
+	
 	function returnCB(t,status) {
+		if ((!status || status==200) && cache && key) {
+			cache[key] = {data:t, expires:Date.now()+1000*that.names[name].ttl.server} ;
+		}
 		sendReturn({value:t,status:status});
 	};
+	
 	function errorCB(err,details) {
+		if (cache && key && cache[key]) {
+			delete cache[key];
+		}
 		DEBUG(details?29:20,err,details) ;
 		sendReturn({value:err,status:500});
 	} ;
 
-	if (!this.api[name]) {
+	if (!that.api[name]) {
 		return errorCB(new Error("Endpoint not found: "+name),404) ;
 	}
-		
-	// Proto-augment "this" with the current request so the remoted API can query session
-	// info etc.
-	var context = that.proxyContext(name,req,rsp) ;
 	
 	var fn = that.api[name].fn ;
 	if (fn[req.apiVersion])
@@ -141,8 +191,12 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	fn.apply(context,args)(returnCB,errorCB) ;
 };
 
-ApiPublisher.prototype.proxyContext = function(name,req,rsp) {
-	return Object.create(this.context,{ request:{value:req} }) ;
+ApiPublisher.prototype.cacheObject = function(obj) {
+	return {args:obj.arguments,version:obj.request.apiVersion} ;
+};
+
+ApiPublisher.prototype.proxyContext = function(name,req,rsp,args) {
+	return Object.create(this.context,{ request:{value:req}, arguments:args }) ;
 };
 
 ApiPublisher.prototype.serializer = function(req,rsp) {
