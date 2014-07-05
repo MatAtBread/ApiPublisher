@@ -139,12 +139,15 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 			DEBUG(99,"Response already sent",name,args,result) ;
 		} else {
 			rsp.writeHead(result.status || 200, stdHeaders);
-			var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
 			if (result.status>=500) {
-				DEBUG(28,"5xx Response: ",req.session, json) ;
+				DEBUG(28,"5xx Response: ",req.session) ;
 			}
 			DEBUG(1,name,args," "+(Date.now()-tStart)+"ms") ;
-			rsp.end(json);
+			require('./pushJSON')(rsp,result.value,that.serializer(req,rsp),function(){
+				rsp.end(json);
+			}) ;
+			//var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
+			//rsp.end(json);
 		}
 	} ;
 	
@@ -200,7 +203,7 @@ ApiPublisher.prototype.proxyContext = function(name,req,rsp,args) {
 };
 
 ApiPublisher.prototype.serializer = function(req,rsp) {
-	return function() { return null } ;
+	return null ;
 };
 
 /**
