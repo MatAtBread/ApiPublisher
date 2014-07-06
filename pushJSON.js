@@ -43,26 +43,42 @@ module.exports = function(out,obj,replacer,onComplete) {
 	var next = null ;
 	var index = 0 ;
 	obj = {'':obj} ;
+	
+	var yield = 0 ;
+	function write(obj,enc,next) {
+		yield += 1 ;
+		if (out.write(obj,enc||"utf8")) {
+			if (next) {
+				if (yield%100)
+					next() ;
+				else
+					setImmediate(next) ;
+			} 
+		} else { 
+			next && out.once('drain',next) ;
+		}
+	}
+	
 	function walk(parent,k) {
 		obj = xform(parent,k,obj) ;
 		if (obj==undefined) {
 			next() ;
 		} else if (obj==null) {
-			out.write('null',enc,next);
+			write('null',enc,next);
 		} else if (typeof obj === "string") {
-			out.write(quote(obj),enc,next);
+			write(quote(obj),enc,next);
 		} else if (typeof obj === "number") {
-			out.write(isFinite(obj) ? String(obj) : 'null',enc,next);
+			write(isFinite(obj) ? String(obj) : 'null',enc,next);
 		} else if (typeof obj === "boolean" || typeof obj === "null") {
-			out.write(String(obj),enc,next);
+			write(String(obj),enc,next);
 		} else if (Array.isArray(obj)) {
 			if (obj.length==0)
-				out.write('[]',enc,next);
+				write('[]',enc,next);
 			else {
 				// Save state
 				stack.push({next:next,index:index,obj:obj}) ;
 				
-				out.write('[',enc);
+				write('[',enc);
 				
 				// Current obj
 				index = 0 ;
@@ -72,11 +88,11 @@ module.exports = function(out,obj,replacer,onComplete) {
 					index += 1 ;
 					var peek = stack[stack.length-1] ;
 					if (index<peek.obj.length) {
-						out.write(',');
+						write(',');
 						obj = peek.obj[index] ;
 						return walk(peek.obj,index) ;
 					} else {
-						out.write(']');
+						write(']');
 						pop = stack.pop() ;
 						obj = pop.obj ;
 						index = pop.index ;
@@ -89,7 +105,7 @@ module.exports = function(out,obj,replacer,onComplete) {
 		} else {
 			var keys = Object.keys(obj) ;
 			if (!keys || !keys.length) {
-				return out.write('{}',enc,next);
+				return write('{}',enc,next);
 			}
 			obj = {keys:keys,v:obj} ;
 			// Save state
@@ -98,7 +114,7 @@ module.exports = function(out,obj,replacer,onComplete) {
 			// Current obj
 			index = 0 ;
 			if (obj.keys[index]!=="")
-				out.write("{"+quote(obj.keys[index])+":",enc);
+				write("{"+quote(obj.keys[index])+":",enc);
 			var p = obj.v ;
 			var k = obj.keys[index] ;
 			obj = obj.v[k] ;
@@ -106,7 +122,7 @@ module.exports = function(out,obj,replacer,onComplete) {
 				index += 1 ;
 				var peek = stack[stack.length-1] ;
 				if (index<peek.obj.keys.length) {
-					out.write(", "+quote(peek.obj.keys[index])+":",enc);
+					write(", "+quote(peek.obj.keys[index])+":",enc);
 					obj = peek.obj.v[peek.obj.keys[index]] ;
 					return walk(peek.obj.v,peek.obj.keys[index]) ;
 				} else {
@@ -115,7 +131,7 @@ module.exports = function(out,obj,replacer,onComplete) {
 					index = pop.index ;
 					next = pop.next ;
 					if (next) {
-						out.write('}');
+						write('}');
 						return next() ;
 					}
 					return onComplete && onComplete() ;

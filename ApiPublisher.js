@@ -144,7 +144,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 			}
 			DEBUG(1,name,args," "+(Date.now()-tStart)+"ms") ;
 			require('./pushJSON')(rsp,result.value,that.serializer(req,rsp),function(){
-				rsp.end(json);
+				rsp.end();
 			}) ;
 			//var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
 			//rsp.end(json);
