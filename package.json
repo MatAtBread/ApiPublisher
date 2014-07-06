@@ -1,6 +1,6 @@
 {
   "name": "apipublisher",
-  "version": "0.9.8",
+  "version": "0.9.9",
   "description": "Async JS API remoting",
   "main": "index.js",
   "scripts": {
@@ -23,7 +23,5 @@
     "remote"
   ],
   "author": "MatAtBread<bread@mailed.me.uk>",
-  "license": "BSD-2-Clause",
-  "bugs": {
-  }
+  "license": "BSD-2-Clause"
 }
