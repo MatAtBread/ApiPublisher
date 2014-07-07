@@ -21,14 +21,30 @@ var strnull = {
 		}
 };
 
-var out = strnull ; //process.stdout ;
+var out = devnull ; //process.stdout ;
 
 function report() {
 	for (var i=2; i<t.length; i+=2)
 		console.log(t[i]+":\t"+(t[i+1]-t[i-1])) ;
+	t = ["start",Date.now()] ;
 }
 var t = ["start",Date.now()] ;
 
+function timeJSON(d){
+	t.push("rows "+d.length) ;
+	t.push(Date.now()) ;
+	json(out,d,null,function(){
+		t.push("complete") ;
+		t.push(Date.now()) ;
+		out.write(JSON.stringify(d),"utf8");//,function(){
+			t.push("JSON") ;
+			t.push(Date.now()) ;
+			report() ;
+		//}) ;
+	}) ;
+	t.push("async") ;
+	t.push(Date.now()) ;
+}
 neo4j.start({neo4jURI:"http://dev.favr.tt:7474"},"connect",{
 	vmOptions:null,
 	classpath:null,
@@ -37,31 +53,15 @@ neo4j.start({neo4jURI:"http://dev.favr.tt:7474"},"connect",{
 	haProperties:null
 })(function(db){
 	for (var n=0; n<1; n++) {
-		db.cypher("match (u:User)-->(o:Offer) where has(u.id) return distinct o,count(u)")
-		(function(d){
-			t.push("rows "+d.length) ;
-			t.push(Date.now()) ;
-			json(out,d,null,function(){
-				t.push("async") ;
-				t.push(Date.now()) ;
-				out.write(JSON.stringify(d),"utf8");//,function(){
-					t.push("JSON") ;
-					t.push(Date.now()) ;
-					report() ;
-				//}) ;
-			}) ;
-		},$error);
-		t.push("start") ;
+		db.cypher("match (u:User)-->(o:Offer) where has(u.id) return distinct o,count(u)")(timeJSON,$error);
+		t.push("db") ;
 		t.push(Date.now()) ;
 	}
 },$error) ;
- 
-/*json(out,[123,"abc",{name:"xyz",age:987},456],null,function(){
-	t.push("\nJSON") ;
-	t.push(Date.now()) ;
-	report() ;
-}) ;*/
 
+timeJSON([123,"abc",{name:"xyz",age:987},456]) ;
+
+/*
 var x = URL.parse("https://api.github.com/repos/joyent/node/issues?state=all&since=2000-01-01Z00:00:00") ;
 x.headers = {'User-Agent':"Nodent", 'Accept':'application/json'} ;
 http.getBody(x)(function(body){
@@ -78,3 +78,4 @@ http.getBody(x)(function(body){
 		//}) ;
 	}) ;
 },$error) ;
+*/
