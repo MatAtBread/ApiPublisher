@@ -1,4 +1,5 @@
-var json = require('../pushJSON') ;
+var json = require('../pushJSON').writeToStream ;
+var jStream = require('../pushJSON').Readable ;
 
 var $error = console.log.bind(console) ;
 DEBUG = $error ; 
@@ -31,6 +32,13 @@ function report() {
 var t = ["start",Date.now()] ;
 
 function timeJSON(d){
+	var str = jStream(d) ; 
+	str.on('end',report) ;
+	str.pipe(process.stdout) ;
+	t.push("str") ;
+	t.push(Date.now()) ;
+
+/*	
 	t.push("rows "+d.length) ;
 	t.push(Date.now()) ;
 	json(out,d,null,function(){
@@ -44,7 +52,9 @@ function timeJSON(d){
 	}) ;
 	t.push("async") ;
 	t.push(Date.now()) ;
+*/	
 }
+
 neo4j.start({neo4jURI:"http://dev.favr.tt:7474"},"connect",{
 	vmOptions:null,
 	classpath:null,
@@ -59,7 +69,7 @@ neo4j.start({neo4jURI:"http://dev.favr.tt:7474"},"connect",{
 	}
 },$error) ;
 
-timeJSON([123,"abc",{name:"xyz",age:987},456]) ;
+//timeJSON([123,"abc",{name:"xyz",age:987},456]) ;
 
 /*
 var x = URL.parse("https://api.github.com/repos/joyent/node/issues?state=all&since=2000-01-01Z00:00:00") ;
