@@ -41,7 +41,10 @@ module.exports = function(out,obj,replacer,onComplete) {
 		} else throw new Error("Replacer must be nullish, a function or an Array") ;
 
 		var stack = [] ;
-		var next = function(){ 
+		var t = Date.now() ;
+		var next = function(){
+			t = Date.now()-t ;
+			//console.log("serialized in "+t+"ms") ;
 			onComplete() 
 		};
 		var index = 0 ;
