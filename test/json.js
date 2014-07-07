@@ -11,7 +11,7 @@ var neo4j = require('swoon-neo4j') ;;
 
 var devnull = {
 		write:function(data,enc,done){ 
-			done && process.nextTick(done); 
+			done && setImmediate(done); 
 			return true;
 		}
 };
@@ -32,13 +32,14 @@ function report() {
 var t = ["start",Date.now()] ;
 
 function timeJSON(d){
+/*	
 	var str = jStream(d) ; 
 	str.on('end',report) ;
 	str.pipe(process.stdout) ;
 	t.push("str") ;
 	t.push(Date.now()) ;
+*/
 
-/*	
 	t.push("rows "+d.length) ;
 	t.push(Date.now()) ;
 	json(out,d,null,function(){
@@ -52,7 +53,6 @@ function timeJSON(d){
 	}) ;
 	t.push("async") ;
 	t.push(Date.now()) ;
-*/	
 }
 
 neo4j.start({neo4jURI:"http://dev.favr.tt:7474"},"connect",{
