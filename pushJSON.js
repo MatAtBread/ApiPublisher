@@ -13,22 +13,33 @@ function iter(fn) {
 function createReadStream(obj,replacer,onComplete) {
 	var rs = new Readable ;
 	var readyToRead = null ;
+	var remaining = 1024 ; // Small buffer to get going, then start yielding
+	var chunk = [] ;
 
-	var j = writeInChunks(function(data,encoding,done){
-		rs.push(data) ;
-		if (done)
-			readyToRead = iter(done) ;
+	var j = writeInChunks(function(data,done){
+		remaining = remaining-data.length ;
+		chunk.push(data) ;
+		if (done) {
+			if (remaining>0)
+				return done ;
+			readyToRead = iter(done)  ;
+			rs.push(chunk.join("")) ;
+			chunk = [] ;
+		}
 		return ;
 	},obj,replacer,function(){
+		if (chunk.length)
+			rs.push(chunk.join("")) ;
+		chunk = null ;
 		rs.push(null) ;
 		onComplete && onComplete() ;
 	}) ;
+	
 	rs._read = function(size) {
-		if (readyToRead) {
-			var x = readyToRead ;
-			readyToRead = null ;
-			x() ;
-		}
+		remaining = size ;
+		var x = readyToRead ;
+		readyToRead = null ;
+		x && setImmediate(x) ;
 	}
 	return rs ;
 }
@@ -81,13 +92,13 @@ function writeInChunks(out,obj,replacer,onComplete) {
 		var index = 0 ;
 		var sep ;
 
-		var write ;
+		var sendChunk ;
 		var yield = 0 ;
 		if (typeof out==="function")
-			write = out ;
+			sendChunk = out ;
 		else if (out.write.length==3) {
 			// Support "callback"
-			write = function(data,encoding,done) {
+			sendChunk = function(data,done) {
 				// Some of the streams (e.g. process.stdout) support the callback,
 				// but use process.nextTick() to invoke it, meaning we run out of
 				// stack, so we still yield occasionally so it unwinds. Ideally,
@@ -96,21 +107,21 @@ function writeInChunks(out,obj,replacer,onComplete) {
 				yield = yield+data.length ;
 				if (done) {
 					if (yield<8192) {
-						out.write(data,encoding,done && iter(done)) ;
+						out.write(data,enc,done && iter(done)) ;
 					} else {
 						yield = 0 ;
 						setImmediate(iter(done)) ;
 					}
 				} else {
-					out.write(data,encoding) ;
+					out.write(data,enc) ;
 				}
 			}
 		} else {
 			// No callback
-			write = function(data,encoding,done) {
+			sendChunk = function(data,done) {
 				yield = yield+data.length ;
 				if (done) {
-					if (out.write(data,encoding)) {
+					if (out.write(data,enc)) {
 						if (yield<8192)
 							return done ;
 						yield = 0 ;
@@ -120,22 +131,22 @@ function writeInChunks(out,obj,replacer,onComplete) {
 					out.once('drain',iter(done)) ;
 					return ;
 				}
-				out.write(data,encoding) ;
+				out.write(data,enc) ;
 				return ;
 			}
 		}
 
 		function walk() {
 			if (obj==null) {
-				return write('null',enc,next);
+				return sendChunk('null',next);
 			} else if (typeof obj === "string") {
-				return write(quote(obj),enc,next);
+				return sendChunk(quote(obj),next);
 			} else if (typeof obj !== "object" || obj instanceof Number) {
-				//return write(JSON.stringify(obj),enc,next);
-				return write(obj.toString(),enc,next);
+				//return sendChunk(JSON.stringify(obj),next);
+				return sendChunk(obj.toString(),next);
 			} else if (Array.isArray(obj)) {
 				if (obj.length==0)
-					return write('[]',enc,next);
+					return sendChunk('[]',next);
 				else {
 					// Save state
 					stack.push({next:next,index:index,obj:obj}) ;
@@ -148,11 +159,11 @@ function writeInChunks(out,obj,replacer,onComplete) {
 							obj = peek.obj[index] ;
 							obj = xform(peek.obj,index,obj) ;
 							index += 1 ;
-							write(sep);
+							sendChunk(sep);
 							sep = ", " ;
 							return walk ;
 						} else {
-							write(']');
+							sendChunk(']');
 							var pop = stack.pop() ;
 							obj = pop.obj ;
 							index = pop.index ;
@@ -167,7 +178,7 @@ function writeInChunks(out,obj,replacer,onComplete) {
 			} else {
 				var keys = Object.keys(obj) ;
 				if (!keys || !keys.length) {
-					return write('{}',enc,next);
+					return sendChunk('{}',next);
 				}
 				obj = {keys:keys,v:obj} ;
 				// Save state
@@ -185,7 +196,7 @@ function writeInChunks(out,obj,replacer,onComplete) {
 						if (obj===undefined) {
 							return next ;
 						}
-						write(sep+quote(k2)+":",enc);
+						sendChunk(sep+quote(k2)+":");
 						sep = ", " ;
 						return walk ;
 					} else {
@@ -193,7 +204,7 @@ function writeInChunks(out,obj,replacer,onComplete) {
 						obj = pop.obj ;
 						index = pop.index ;
 						next = pop.next ;
-						write('}');
+						sendChunk('}');
 						return next ;
 					}
 				}
