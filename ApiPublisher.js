@@ -128,6 +128,8 @@ function hash(o) {
 /**
  * Remote invocation of a local async funcback API. 
  **/
+var json = require('./pushJSON') ;
+
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	var that = this ;
 	// Because we like to accept nicely posted JSON, _and_ form input data, we 
@@ -143,9 +145,8 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 				DEBUG(28,"5xx Response: ",req.session) ;
 			}
 			DEBUG(1,name,args," "+(Date.now()-tStart)+"ms") ;
-			require('./pushJSON')(rsp,result.value,that.serializer(req,rsp),function(){
-				rsp.end();
-			}) ;
+			//json.Readable(result.value,that.serializer(req,rsp)).pipe(rsp) ;
+			json.writeToStream(rsp,result.value,that.serializer(req,rsp),function(){ rsp.end(); }) ;
 			//var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
 			//rsp.end(json);
 		}

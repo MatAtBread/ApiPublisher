@@ -2,7 +2,38 @@
  * Serialize an object to JSON by pushing it to a writeable stream in little bits
  */
 
-module.exports = function(out,obj,replacer,onComplete) {
+var Readable = require('stream').Readable ;
+
+function iter(fn) {
+	return function() {
+		while (fn = fn()) ;
+	}
+}
+
+function createReadStream(obj,replacer,onComplete) {
+	var rs = new Readable ;
+	var readyToRead = null ;
+
+	var j = writeInChunks(function(data,encoding,done){
+		rs.push(data) ;
+		if (done)
+			readyToRead = iter(done) ;
+		return ;
+	},obj,replacer,function(){
+		rs.push(null) ;
+		onComplete && onComplete() ;
+	}) ;
+	rs._read = function(size) {
+		if (readyToRead) {
+			var x = readyToRead ;
+			readyToRead = null ;
+			x() ;
+		}
+	}
+	return rs ;
+}
+
+function writeInChunks(out,obj,replacer,onComplete) {
 	(function(){
 //		The stringify method takes a value and an optional replacer, and an optional
 //		space parameter, and returns a JSON text. The replacer can be a function
@@ -50,15 +81,11 @@ module.exports = function(out,obj,replacer,onComplete) {
 		var index = 0 ;
 		var sep ;
 
-		function iter(fn) {
-			return function() {
-				while (fn = fn()) ;
-			}
-		}
-
 		var write ;
 		var yield = 0 ;
-		if (out.write.length==3) {
+		if (typeof out==="function")
+			write = out ;
+		else if (out.write.length==3) {
 			// Support "callback"
 			write = function(data,encoding,done) {
 				// Some of the streams (e.g. process.stdout) support the callback,
@@ -66,21 +93,27 @@ module.exports = function(out,obj,replacer,onComplete) {
 				// stack, so we still yield occasionally so it unwinds. Ideally,
 				// we'd simply be pulled by the stream, but it doesn't seem to 
 				// want to play nice.
-				yield = (yield+1)|0 ;
-				if (!done || yield&0x0FF) {
-					out.write(data,encoding,done && iter(done)) ;
+				yield = yield+data.length ;
+				if (done) {
+					if (yield<8192) {
+						out.write(data,encoding,done && iter(done)) ;
+					} else {
+						yield = 0 ;
+						setImmediate(iter(done)) ;
+					}
 				} else {
-					setImmediate(iter(done)) ;
+					out.write(data,encoding) ;
 				}
 			}
 		} else {
 			// No callback
 			write = function(data,encoding,done) {
+				yield = yield+data.length ;
 				if (done) {
-					yield = (yield+1)|0 ;
 					if (out.write(data,encoding)) {
-						if (yield&0x0FFF)
+						if (yield<8192)
 							return done ;
+						yield = 0 ;
 						setImmediate(iter(done)) ;
 						return ;
 					}
@@ -95,9 +128,11 @@ module.exports = function(out,obj,replacer,onComplete) {
 		function walk() {
 			if (obj==null) {
 				return write('null',enc,next);
+			} else if (typeof obj === "string") {
+				return write(quote(obj),enc,next);
 			} else if (typeof obj !== "object" || obj instanceof Number) {
 				//return write(JSON.stringify(obj),enc,next);
-				return write(quote(obj.toString()),enc,next);
+				return write(obj.toString(),enc,next);
 			} else if (Array.isArray(obj)) {
 				if (obj.length==0)
 					return write('[]',enc,next);
@@ -199,3 +234,7 @@ function quote(string) {
 }
 
 
+module.exports = {
+		writeToStream:writeInChunks,
+		Readable:createReadStream
+} ;
