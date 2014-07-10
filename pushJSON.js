@@ -15,6 +15,7 @@ function createReadStream(obj,replacer,onComplete) {
 	var readyToRead = null ;
 	var remaining = 1024 ; // Small buffer to get going, then start yielding
 	var chunk = [] ;
+	var t = Date.now() ;
 
 	var j = writeInChunks(function(data,done){
 		remaining = remaining-data.length ;
@@ -32,6 +33,7 @@ function createReadStream(obj,replacer,onComplete) {
 			rs.push(chunk.join("")) ;
 		chunk = null ;
 		rs.push(null) ;
+		console.log("PushJSON t="+(Date.now()-t)) ;
 		onComplete && onComplete() ;
 	}) ;
 	

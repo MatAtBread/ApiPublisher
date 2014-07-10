@@ -145,11 +145,11 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 				DEBUG(28,"5xx Response: ",req.session) ;
 			}
 			DEBUG(1,name,args," "+(Date.now()-tStart)+"ms") ;
-			json.Readable(result.value,that.serializer(req,rsp)).pipe(rsp) ;
+			//json.Readable(result.value,that.serializer(req,rsp)).pipe(rsp) ;
 			//json.writeToStream(rsp,result.value,that.serializer(req,rsp),function(){ rsp.end(); }) ;
-			//var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
+			var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
 			rsp.end(json);
-			//DEBUG(1,name,args," sent "+(Date.now()-tStart)+"ms") ;
+			DEBUG(1,name,args," sent "+(Date.now()-tStart)+"ms\n="+json) ;
 		}
 	} ;
 	
