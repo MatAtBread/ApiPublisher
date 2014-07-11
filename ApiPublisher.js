@@ -132,9 +132,15 @@ var json = require('./pushJSON') ;
 
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	var that = this ;
+
+	if (!that.api[name]) {
+		return errorCB(new Error("Endpoint not found: "+name),404) ;
+	}
+	
 	// Because we like to accept nicely posted JSON, _and_ form input data, we 
 	// test the body type
 	var args = (req.body instanceof Array) ? req.body:[req.body] ; // Wasn't a JSON encoded argument list, so wrap it like it was
+	
 	var tStart = Date.now() ;
 	function sendReturn(result){
 		if (rsp.headersSent) {
@@ -149,7 +155,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 			//json.writeToStream(rsp,result.value,that.serializer(req,rsp),function(){ rsp.end(); }) ;
 			var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
 			rsp.end(json);
-			DEBUG(1,name,args," sent "+(Date.now()-tStart)+"ms\n="+json) ;
+			DEBUG(1,name,args," sent "+(Date.now()-tStart)+"ms") ;
 		}
 	} ;
 	
@@ -185,10 +191,6 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		sendReturn({value:err,status:500});
 	} ;
 
-	if (!that.api[name]) {
-		return errorCB(new Error("Endpoint not found: "+name),404) ;
-	}
-	
 	var fn = that.api[name].fn ;
 	if (fn[req.apiVersion])
 		fn = fn[req.apiVersion] ; 

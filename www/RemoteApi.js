@@ -215,9 +215,7 @@ window.RemoteApi = (function(){
 		reviver:null,
 		serializer:null,
 		headers:null,
-		log:function() {
-			//console.log.apply(console,arguments) ;
-		}
+		log:function() {}
 	} ;
 
 	RemoteApi.load = function(url,options) {
