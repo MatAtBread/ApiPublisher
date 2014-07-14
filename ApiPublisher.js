@@ -128,7 +128,10 @@ function hash(o) {
 /**
  * Remote invocation of a local async funcback API. 
  **/
-var json = require('./pushJSON') ;
+ApiPublisher.prototype.sendReturn = function(req,rsp,result,status) {
+	var json = JSON.stringify(result,this.serializer(req,rsp)) ;
+	rsp.end(json);
+}
 
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	var that = this ;
@@ -146,15 +149,14 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		if (rsp.headersSent) {
 			DEBUG(99,"Response already sent",name,args,result) ;
 		} else {
-			rsp.writeHead(result.status || 200, stdHeaders);
+			for (var i in stdHeaders)
+				rsp.setHeader(i,stdHeaders[i]) ;
+			rsp.statusCode = result.status || 200 ;
 			if (result.status>=500) {
 				DEBUG(28,"5xx Response: ",req.session) ;
 			}
 			DEBUG(1,name,args," "+(Date.now()-tStart)+"ms") ;
-			//json.Readable(result.value,that.serializer(req,rsp)).pipe(rsp) ;
-			//json.writeToStream(rsp,result.value,that.serializer(req,rsp),function(){ rsp.end(); }) ;
-			var json = JSON.stringify(result.value,that.serializer(req,rsp)) ;
-			rsp.end(json);
+			that.sendReturn(req,rsp,result.value,result.status) ;
 			DEBUG(1,name,args," sent "+(Date.now()-tStart)+"ms") ;
 		}
 	} ;

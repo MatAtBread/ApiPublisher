@@ -57,10 +57,12 @@ window.RemoteApi = (function(){
 				setHeaders(x,that.headers) ;
 				x.onreadystatechange = function() {
 					if (x.readyState==4) {
-						if (x.getResponseHeader("Content-Type")=="application/json") {
+						var contentType = x.getResponseHeader("Content-Type") ; 
+						if (contentType=="application/json" || contentType=="text/plain") {
 							var data = x.responseText ;
 							try {
-								data = !data?data:JSON.parse(data,that.reviver) ;
+								if (contentType=="application/json")
+									data = !data?data:JSON.parse(data,that.reviver) ;
 							} catch (ex) {
 								that.apiEnd(path,name,args,false) ;
 								return error(ex) ;

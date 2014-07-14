@@ -233,6 +233,18 @@ The request and response are passed to the serializer to enable responses to be 
 
 The default implement does simple JSON serialization with no modification.
 
+prototype.sendReturn(req,rsp,result,status)
+------------------------------------------
+Provides a way to intercept (and modify) the final sending phase so that, for example, alternative serializers can be used to send data to a client.
+
+The default implemenatation is :
+
+	var json = JSON.stringify(result,this.serializer(req,rsp)) ;
+	rsp.end(json);
+
+Setting additional and/or replacement headers and statuCodes is possible here as although defaults have been set by the time the function is called, no writing has commenced.
+
+
 ServerApi options and prototype
 ===============================
 

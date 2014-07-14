@@ -37,7 +37,9 @@ function callRemoteFuncBack(that,path,args) {
 				if (res.statusCode==200) {
 					DEBUG(1,path,args,res.statusCode,(Date.now()-tStart)+"ms") ;
 					var data = body ;
-					callback(!data?data:JSON.parse(data,that.reviver)) ;
+					if (res.headers['content-type']=="application/json")
+						data = !data?data:JSON.parse(data,that.reviver) ;
+					callback(data) ;
 				} else {
 					DEBUG(25,path,args,res.statusCode,(Date.now()-tStart)+"ms\n"+body) ;
 					if (res.headers['content-type']=="application/json") {
