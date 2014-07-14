@@ -53,6 +53,8 @@ Full details can be found at [https://www.npmjs.org/package/nodent]. Note the us
 Changelog
 =========
 
+14Jul14 Implement ApiPublisher.prototype.sendReturn(). Allow for "text/plain" responses which are not parsed into JSON but simply returned to the callee asynchronously as strings.
+
 04Jul14 Add server-side caching (see lazy cachinge below). Add "arguments" to the server proxyContext (UPDATED)
 
 27Jun14	Enable lazy caching (see below)
@@ -242,7 +244,14 @@ The default implemenatation is :
 	var json = JSON.stringify(result,this.serializer(req,rsp)) ;
 	rsp.end(json);
 
-Setting additional and/or replacement headers and statuCodes is possible here as although defaults have been set by the time the function is called, no writing has commenced.
+Setting additional and/or replacement headers and statuCodes is possible here as although defaults have been set by the time the function is called, no writing has commenced. If your objects are very big (>500k), using a streaming JSON serializer works well to keep Node's event loop co-operative. For example, with pushjson (https://www.npmjs.org/package/pushjson):
+
+	var pj = require('pushjson') ;
+	myApi.sendReturn = function(req,rsp,result,status){
+		// Serialize and send asynchronously
+		pj.Readable(result).pipe(rsp) ;
+	} ;
+
 
 
 ServerApi options and prototype
