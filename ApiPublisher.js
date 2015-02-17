@@ -7,7 +7,7 @@
  * 	 i.e. those that have the form func(args...)(okCallback,errorCallback)
  */
 
-var async = require('nodent')({use:['async']}).async ;
+var map = require('nodent')({use:['map']}).map ;
 var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
 
 /**
@@ -70,7 +70,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 	var self = this ;
 	if (path)
 		self.path = path ;
-	async.map(self.api, function(e){
+	map(self.api, function(e){
 		return function(ok,error) {
 			var fn = self.api[e].fn ;
 			if (fn[req.apiVersion])
@@ -90,8 +90,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 				ok(self.names[e]) ;
 			}
 		};
-	})
-	(ok,$error) ;
+	})(ok,$error) ;
 };
 
 var stdHeaders = {

@@ -1,6 +1,18 @@
 window.RemoteApi = (function(){
 	function Nothing(){} ;
 
+	 function SyncPromise(resolver) {
+		var fn = function(result,error){
+			try {
+				return resolver.apply(this,arguments) ;
+			} catch(ex) {
+				return error.apply(this,ex) ;
+			}
+		} ;
+		fn.then = function(ret,err){ return fn(ret,err); }
+		return fn ;
+	};
+	
 	function hash(o) {
 		if (o===undefined) return "undefined" ;
 		if (o===null) return "null" ;
@@ -43,7 +55,7 @@ window.RemoteApi = (function(){
 
 	function RemoteApi(url,options,onLoad) {
 		function callRemoteFuncBack(that,path,name,args) {
-			return function(callback,error) {
+			return new SyncPromise(function(callback,error) {
 				that.apiStart(path,name,args) ;
 				if (!callback) callback = that.onSuccess ;
 				if (!error) error = that.onError ;
@@ -93,7 +105,7 @@ window.RemoteApi = (function(){
 				}
 				x.send(JSON.stringify(Array.prototype.slice.call(args),that.serializer)) ;
 				return x.abort.bind ? x.abort.bind(x):function(){ x.abort(); } ;
-			}
+			}) ;
 		}
 
 		var that = this ;
@@ -139,13 +151,13 @@ window.RemoteApi = (function(){
 						that[i] = function() {
 							var key = cacheKey(arguments,api[i].ttl.on) ;
 							if (api[i].cache[key] && (((Date.now()-api[i].cache[key].t)/1000) < api[i].ttl.t)) {
-								return function(ok,error) {
+								return new SyncPromise(function(ok,error) {
 									that.log("Cache hit "+i) ;
 									return (ok || that.onSuccess)(api[i].cache[key].data) ;
-								} ;
+								}) ;
 							} 
 							var cb = callRemoteFuncBack(this,url,i,arguments) ;
-							return function(ok,err) {
+							return new SyncPromise(function(ok,err) {
 								return cb(function(d){
 									that.log("Cache miss "+i) ;
 									api[i].cache[key] = {t:Date.now(),data:d} ;
@@ -155,7 +167,7 @@ window.RemoteApi = (function(){
 									delete api[i].cache[key] ;
 									return err && err.apply(this,arguments)
 								}) ;
-							}
+							}) ;
 						}
 						that[i].clearCache = function() {
 							api[i].cache = {} ;
@@ -171,9 +183,9 @@ window.RemoteApi = (function(){
 				} else {
 					var staticVal = that.reviver?that.reviver("",api[i]):api[i] ; 
 					that[i] = function() {
-						return function(ok,error) {
+						return new SyncPromise(function(ok,error) {
 							return (ok || that.onSuccess)(staticVal) ;
-						} ;
+						}) ;
 					} ;
 					that[i].clearCache = Nothing ;
 				}
@@ -221,12 +233,12 @@ window.RemoteApi = (function(){
 	} ;
 
 	RemoteApi.load = function(url,options) {
-		return function($return,$error) {
+		return new SyncPromise(function($return,$error) {
 			new RemoteApi(url,options,function(ex){
 				if (ex) $error(ex) ;
 				else $return(this) ;
 			}) ;
-		};
+		});
 	};
 
 	return RemoteApi ;

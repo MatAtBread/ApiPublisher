@@ -1,6 +1,7 @@
 /**
  * A Node-friendly way to initialise a remote API. cf: RemoteApi.js in the client
  */
+var nodent = require('nodent')() ;
 var http = require('http') ;
 var URL = require('url') ;
 
@@ -15,7 +16,7 @@ function getOwnPropertyDescriptions(obj) {
 } ;
 
 function callRemoteFuncBack(that,path,args) {
-	return function(callback,error) {
+	return new nodent.SyncPromise(function(callback,error) {
 		if (!callback) callback = that.onSuccess.bind(that) ;
 		if (!error) error = that.onError.bind(that) ;
 
@@ -60,7 +61,7 @@ function callRemoteFuncBack(that,path,args) {
 		x.setHeader("Content-Type","application/json") ;
 		x.write(JSON.stringify(Array.prototype.slice.call(args),that.serializer)) ;
 		x.end() ;
-	};
+	});
 }
 
 function ServerApi(url,onLoad) {
@@ -111,12 +112,12 @@ ServerApi.prototype.serializer = null ;
 ServerApi.prototype.reviver = null ;
 
 ServerApi.load = function(url) {
-	return function($return,$error) {
+	return new nodent.SyncPromise(function($return,$error) {
 		new ServerApi(url,function(ex){
 			if (ex) $error(ex) ;
 			else $return(this) ;
 		}) ;
-	};
+	});
 };
 
 module.exports = ServerApi ;

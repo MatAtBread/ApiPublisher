@@ -1,7 +1,7 @@
 ApiPublisher
 ============
 
-ApiPublisher is a simple framework to extend asynchronous "funcback" signature calls across over HTTP. Tested clients exist for NodeJS and web-browsers, and a publisher (server) for NodeJS. The goal of ApiPublisher is provide an identical asynchronous API across clients and servers so that dependent routines can execute at any location without modification.
+ApiPublisher is a simple framework to extend asynchronous calls or Promises across over HTTP. Tested clients exist for NodeJS and web-browsers, and a publisher (server) for NodeJS. The goal of ApiPublisher is provide an identical asynchronous API across clients and servers so that dependent routines can execute at any location without modification.
 
 ApiPublisher works with Connect, Express and Nodent [https://www.npmjs.org/package/nodent] seamlessly.
 
@@ -17,62 +17,57 @@ Usage
 
 ApiPublisher consists of three components. One to expose APIs from a nodejs server (ApiPublisher), one to call these APIs from another nodejs server (ServerApi) and one to call these APIs from a browser (RemoteApi).
 
-All APIs must conform to the "funcback" pattern, where a function returns asynchronously by returning a function that accepts to callback arguments (one for the return value, one for exceptions). These have the calling signature of:
+All APIs must return a Promise, or conform to the "funcback" pattern (where a function returns asynchronously by returning a function that accepts to callback arguments - one for the return value, one for exceptions). You can find out more about [choosing between "funcbacks" and Promises](https://github.com/MatAtBread/nodent#es7-and-promises).
 
-	myAsyncFunction(...arguments...)(function(success){
-		// Handle "success" return
-	},function(error){
-		// Handle "error" exception
-	})
+You do not have to use ES7 (or anything else) to use ApiPublisher, but the ES7 keywords `async` and `await` make writing async code much easier. If you do not use an ES7 transpiler, you can still call remote functions (as they return Promises) or as "funcbacks".
 
-These functions are typically declared as:
+Using [Nodent](https://github.com/MatAtBread/nodent) or another ES7 engine these can be called as:
 
-	function myAsyncFunction(...arguments...) {
-		return function(success,error) {
-			try {
-				// Do something asynchronous
-				return success(...result...) ;
-			} catch(ex) {
-				return error(ex) ;
-			}
-		}
-	}
-
-Using Nodent these can be called as:
-
-	success <<= myAsyncFunction(...arguments...) ;
+	var success = await myAsyncFunction(...arguments...) ;
 
 and declared as:
 
-	async-function myAsyncFunction(...arguments...) {
-		return success(...result...) ;
+	async function myAsyncFunction(...arguments...) {
+		return ...result... ;
 	}
 
-Full details can be found at [https://www.npmjs.org/package/nodent]. Note the use of Nodent to generate funcback patterned calls is entirely optional. Within this README, Nodent is used in some of the examples for brevity.
+Note the use of Nodent to generate Promises or funcback patterned calls is entirely optional. Within this README, Nodent is used in some of the examples for brevity. If you don't wish to use teh ES7 syntax, the ES5 equivalents for calling a remote function are:
+
+	var success = myAsyncFunction(...arguments...).then(function(result){....}) ;
+	
+and:
+
+	function myAsyncFunction(...arguments...) {
+		return new Promise(function(resolve,error) {
+			return resolve(...result...) ;
+		}) ;
+	}
 
 Changelog
 =========
 
-14Jul14 Implement ApiPublisher.prototype.sendReturn(). Allow for "text/plain" responses which are not parsed into JSON but simply returned to the callee asynchronously as strings.
+17Feb15: Updated to use the latest ES7-compliant version of Nodent and Promises.
 
-04Jul14 Add server-side caching (see lazy cachinge below). Add "arguments" to the server proxyContext (UPDATED)
+14Jul14: Implement ApiPublisher.prototype.sendReturn(). Allow for "text/plain" responses which are not parsed into JSON but simply returned to the callee asynchronously as strings.
 
-27Jun14	Enable lazy caching (see below)
+04Jul14: Add server-side caching (see lazy cachinge below). Add "arguments" to the server proxyContext (UPDATED)
 
-26Jun14	Fix issue where nested APIs are called with the version number in the incorrect position within remote URL
+27Jun14: Enable lazy caching (see below)
+
+26Jun14: Fix issue where nested APIs are called with the version number in the incorrect position within remote URL
 
 Declaring an API for remoting
 -----------------------------
 
-Simply collect together the funcback calls in an object:
+Simply collect together the async calls (or functions returning Promises) in an object:
 
 	var myAPI = {
-		doSearch:async-function(term) {
+		doSearch:async function(term) {
 			var result = {} ; 
 			// search here
 			return result ;
 		},
-		loginUser:async-function(uid,pwd) {
+		loginUser:async function(uid,pwd) {
 			// Examine user DB and generate session
 			return sessionKey ;
 		}
@@ -80,7 +75,7 @@ Simply collect together the funcback calls in an object:
 
 This API can be called locally (of course), for example:
 
-	results <<= myAPI.doSearch("Hello") ;
+	results = await myAPI.doSearch("Hello") ;
 
 To expose the APIs in nodejs, create a new ApiPublisher from your object and server it from the URL of your choice.
 
@@ -92,7 +87,8 @@ To expose the APIs in nodejs, create a new ApiPublisher from your object and ser
 	app.use(connect.json())	// Published APIs expect a JSON encoded request.body
 		.use("/api", publishedApi)  ;
 	
-	// Iff we want to make the API available to browsers, also expose the RemoteApi script for them to load
+	// Iff we want to make the API available to browsers, 
+	// also expose the RemoteApi script for them to load
 	app.use("/js/RemoteApi.js", require("apipublisher").sendRemoteApi) ;
 		...
 	http.createServer(app).listen(7999);
@@ -106,12 +102,12 @@ To call a published API from node, require the ServerApi, and initialise it from
 
 	var ServerApi = require("apipublisher").ServerApi ; // Allow APIs to be called
 		...
-	api <<= ServerApi.load("http://example.com/api") ;
+	var api = await ServerApi.load("http://example.com/api") ;
 		...
 	// Call the API:
-	user <<= api.loginUser("matt","atbread") ;
+	var user = await api.loginUser("matt","atbread") ;
 	if (user) {
-		result <<= api.doSearch("Hello") ;
+		result = await api.doSearch("Hello") ;
 	}
 
 Note the API is called with exactly the same syntax, semantics and parameters as if it had be called locally (see above).
@@ -125,14 +121,14 @@ On the client, you need to include that script, and then load the remote API as 
 
 	<script src="/js/RemoteApi.js"></script>
 	<script>
-		RemoteApi.load("/api")(function(api){
+		RemoteApi.load("/api").then(function(api){
 			window.api = api ; // Save the API for use later.
 		},function(err){
 			alert("Failed to load API: "+err.message) ;
 		}) ;
 			...
 		document.getElementById("loginButton").onclick = function(){
-			api.loginUser(userName,password)(function(done){
+			api.loginUser(userName,password).then(function(done){
 				window.user = done ;
 			}) ;
 		} ;
@@ -149,12 +145,10 @@ Using Nodent's "generateRequestHandler" to make the browser scripts more readabl
 	function $error(err) {
 		alert("Failed to load API: "+err.message) ;
 	} ;
-	api <<= RemoteApi.load("/api") ;
-	window.api = api ;
+	window.api = await RemoteApi.load("/api") ;
 		...
 	document.getElementById("loginButton").onclick = function(){
-		done <<= api.loginUser(userName,password) ;
-		window.user = done ;
+		window.user = await api.loginUser(userName,password) ;
 	} ;
 
 Example
@@ -183,9 +177,9 @@ When reading and parsing a remote API request, prior to calling the specified fu
 
 	myApi.radius = new RadiusServer(....) ;
 	
-	myApi.loginUser = async-function(uid,pwd) {
+	myApi.loginUser = async function(uid,pwd) {
 		// "this" is "myApi", and it has an object called "radius" that is visible as usual
-		user <<= this.radius.validateUser(uid,pwd) ; 
+		var user = await this.radius.validateUser(uid,pwd) ; 
 		// If remote, check the request's source IP
 		if (this.request && !this.request.socket.remoteAddress.match(/192\./))
 			throw new Error("Illegal login access attempt") ;
@@ -200,9 +194,8 @@ Using this feature of the prototype.proxyContext allows you to test for session 
 
 The "arguments" parameter is provided as within the funcbank pattern or Nodented calls, the usual Javascript "arguments" object refers to the set [$return,$error] (i.e. the callbacks). This provides for call sequences such as:
 
-	myApi.getUserProfile = async-function(uid,pwd) {
-		result <<= this.getUser.apply(this.arguments) ; // refers to [uid,pwd]
-		return result ;
+	myApi.getUserProfile = async function(uid,pwd) {
+		return = await this.getUser.apply(this.arguments) ; // refers to [uid,pwd]
 	};
 
 Overriding this behaviour allows for other variables to take part in remote API request processing (e.g. closures or similar). Re-assign the member after creation:
@@ -251,7 +244,6 @@ Setting additional and/or replacement headers and statuCodes is possible here as
 		// Serialize and send asynchronously
 		pj.Readable(result).pipe(rsp) ;
 	} ;
-
 
 
 ServerApi options and prototype
@@ -314,9 +306,9 @@ The period, in milliseconds, between throwing out old, cached responses. By defa
 ----------------------
 For browser use, results can be cached (see Lazy Caching below). Every API has a method "clearCache" to discard any cached results and force a network call. For example:
 
-	api <<= RemoteApi.load("/apiExposed") ;
+	api = await RemoteApi.load("/apiExposed") ;
 	api.loginUser.clearCache() ;
-	result <<= api.loginUser("mat","atbread") ;
+	result = await api.loginUser("mat","atbread") ;
 
 Note that all functions have a "clearCache" method, even if they are not cachable. In this case, the function does nothing.
 
@@ -324,7 +316,7 @@ RemoteApi.load(url,options)
 ---------------------------
 An optional "options" object can be used to override the prototypes at creation time, for example:
 
-	myApi <<= RemoteApi.load("/api",{
+	myApi = await RemoteApi.load("/api",{
 		version:3,
 		noLazyCache:true,
 		headers:{"X-Requested-With":"BreadBaker/1.3"},
@@ -341,7 +333,7 @@ ApiPublisher supports versioning of the API at the server via the loadable URL. 
 
 Consider the following API:
 
-	myApi.getUserName = async-function() {
+	myApi.getUserName = async function() {
 		var user = readUserFromDB(this.request.session.uid) ;
 		return user.firstName+" "+user.lastName ;
 	}
@@ -350,7 +342,7 @@ Accessible (as usual) at "/api/getUserName".
 
 We subsequently decide to provider a more detailed return:	
 
-	myApi.getUserName = async-function() {
+	myApi.getUserName = async function() {
 		var user = readUserFromDB(this.request.session.uid) ;
 		return {name:user.firstName+" "+user.lastName,
 			firstName:user.firstName,
@@ -360,7 +352,7 @@ We subsequently decide to provider a more detailed return:
 Clearly, this will break all existing clients which expect the old-style return. We can support both versions as follows:
 
 	// "Latest" version
-	myApi.getUserName = async-function() {
+	myApi.getUserName = async function() {
 		var user = readUserFromDB(this.request.session.uid) ;
 		return {name:user.firstName+" "+user.lastName,
 			firstName:user.firstName,
@@ -368,14 +360,14 @@ Clearly, this will break all existing clients which expect the old-style return.
 	}
 
 	// Old version:
-	myApi.getUserName[1] = async-function() {
+	myApi.getUserName[1] = async function() {
 		user = this.getUserName() ;
 		return user.firstName+" "+user.lastName ;	// Old style - just a string
 	}
 
 This versioned API will be accessible at "/api/getUserName/1". To support this from clients which do not update automatically (i.e. where the code has shipped and is fixed, such as mobile applications), a version can be passed to both ServerApi and RemoteApi within the URL:
 
-	api <<= RemoteApi.load("http://example.com/api/1") ;
+	api = await RemoteApi.load("http://example.com/api/1") ;
 
 This "fixes" the API at version "1". Note: version numbers must be integers greater than zero.
 
@@ -387,7 +379,7 @@ Remote API calls that are "static", unchanging or fixed for a reasonable period 
 
 When the API is accessed via the URL "/api/getUserName", rather than transport the call information, the function is invoked directly and the result serialized instead, but is still callable from the client using the same API signature:
 
-	name <<= api.getUserName() ;
+	name = await api.getUserName() ;
 
 	// or, using traditional Javascript
 	api.getUserName()(function(name){ ... }) ;
@@ -400,7 +392,7 @@ Lazy Caching
 ============
 For expensive network calls whose responses are not entirely dynamic, it is possible to cache responses in the client. In order to acheive this, add the following to your function declartation in the server:
 
-	myApi.getUserName = async-function() {
+	myApi.getUserName = async function() {
 		....
 		return name ;
 	}
@@ -411,7 +403,7 @@ Unlike "clientInstance", at least one network call will be made to the remoted A
 
 Often, it is only useful to cache responses based on the arguments to the remote call. For example, a call to get a user's friends cannot re-present the same response for all users:
 
-	myApi.getFriends = async-function(userID) {
+	myApi.getFriends = async function(userID) {
 		....
 		return friends ;
 	}
@@ -420,9 +412,9 @@ Often, it is only useful to cache responses based on the arguments to the remote
 
 This instructs the client to retain a different response for remote calls with a specific value for "userID", so:
 
-	friendsOfMatt <<= api.getFriends("matt") ;
-	friendsOfAlex <<= api.getFriends("alex") ;
-	friendsOfMe <<= api.getFriends("matt") ;
+	friendsOfMatt = await api.getFriends("matt") ;
+	friendsOfAlex = await api.getFriends("alex") ;
+	friendsOfMe = await api.getFriends("matt") ;
 
 ...will make 2 network calls, (one for "matt", one for "alex") and store separate results in the cache.
 
@@ -441,10 +433,10 @@ IMPORTANT: Don't use lazy caching for highly secure, important or personal data.
 
 	var arg1 = {name:"alex"} ;	
 	var arg2 = {name:"alex"} ;	
-	x <<= api.findUser(arg1) ;	// Network trip & cache
-	x <<= api.findUser(arg2) ;	// Different argument, same values - cached response used
+	x = await api.findUser(arg1) ;	// Network trip & cache
+	x = await api.findUser(arg2) ;	// Different argument, same values - cached response used
 	arg1.id = "123456" ;
-	x <<= api.findUser(arg1) ;	// Network trip - same argument (arg1), but values are different
+	x = await api.findUser(arg1) ;	// Network trip - same argument (arg1), but values are different
 
 Lazy Caching is only supported by RemoteApi. ServerApi always makes the network round trip.
 
@@ -454,7 +446,7 @@ For data that is expensive to generate (for example from a complex DB call or mu
 
 To enable server-side result caching, add a "server" member to your "ttl" function:
 
-	myApi.expensive = async-function(..) { ... } ;
+	myApi.expensive = async function(..) { ... } ;
 	/* cache this result in the client for 5 minutes, and on the server for 30 seconds */
 	myApi.expensive.ttl = {t:600, on:"*", server:30} ;
 
@@ -477,15 +469,15 @@ Nested APIs
 An API can include another API, allowing for conditional nesting, for example:
 
 	var userApi = {
-		getUserName:async-function(){ ... },
-		changeUserName:async-function(newName) { ... }
+		getUserName:async function(){ ... },
+		changeUserName:async function(newName) { ... }
 	} ;
 	userApi.getUserName.clientInstance = [] ;
 	var remoteUserApi = new ApiPublisher(userApi) ;
 
 	myApi = {
-		loginUser:async-function(uid,pwd) { .... }
-		userApi: async-function() {
+		loginUser:async function(uid,pwd) { .... }
+		userApi: async function() {
 			if (request.session.user) {
 				return remoteUserApi ;
 			} else {
@@ -500,7 +492,7 @@ In this example, if a call is made to "/myApi", the return API will contain a ne
 	"/myApi/userApi" responds with null
 which can be tested in the client:
 
-	api <<= RemoteApi.load("/myApi") ;
+	api = await RemoteApi.load("/myApi") ;
 	if (!api.userApi)
 		alert("You need to login first") ;
 	else {

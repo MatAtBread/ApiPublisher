@@ -1,10 +1,10 @@
-"use nodent";
+"use nodent-promise";
 
 /*
  * "nodent" friendly setTimeout
  */
 
-async-function after(n) {
+async function after(n) {
 	setTimeout($return,n) ;
 }
 
@@ -17,15 +17,15 @@ async-function after(n) {
  */
 
 var api = {
-	delay:async-function(period) {
+	delay:async function(period) {
 		period = period || 1000 ;
 		var result = {started:Date.now()} ;
-		undefined <<= after(period) ;
+		await after(period) ;
 		result.finished = Date.now() ;
 		result.flutter = (result.finished-result.started)-period ; 
 		return result ;
 	},
-	client:async-function(username) {
+	client:async function(username) {
 		return username+" - don't waste bandwidth!" ;
 	}
 } ;
