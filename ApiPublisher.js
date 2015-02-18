@@ -7,7 +7,7 @@
  * 	 i.e. those that have the form func(args...)(okCallback,errorCallback)
  */
 
-var map = require('nodent')({use:['map']}).map ;
+var nodent = require('nodent')({use:['map']}) ;
 var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
 
 /**
@@ -70,7 +70,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 	var self = this ;
 	if (path)
 		self.path = path ;
-	map(self.api, function(e){
+	nodent.Promise.mapPromiseCall(nodent.map(self.api, function(e){
 		return function(ok,error) {
 			var fn = self.api[e].fn ;
 			if (fn[req.apiVersion])
@@ -79,7 +79,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 				if (fn.length != fn.clientInstance.length) {
 					DEBUG(20,"Warning: Remote instance function arguments not the same as declaration:",e) ;
 				}
-				fn.apply({request:req},fn.clientInstance)(function(instanceData){
+				return nodent.Promise.mapPromiseCall(fn.apply({request:req},fn.clientInstance),function(instanceData){
 					if (instanceData instanceof ApiPublisher) {
 						 instanceData.getRemoteApi(req, e, ok) ;
 					} else {
@@ -90,7 +90,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 				ok(self.names[e]) ;
 			}
 		};
-	})(ok,$error) ;
+	}),ok,$error) ;
 };
 
 var stdHeaders = {
@@ -196,7 +196,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	if (fn[req.apiVersion])
 		fn = fn[req.apiVersion] ; 
 	
-	fn.apply(context,args)(returnCB,errorCB) ;
+	return nodent.Promise.mapPromiseCall(fn.apply(context,args),returnCB,errorCB) ;
 };
 
 ApiPublisher.prototype.cacheObject = function(obj) {
