@@ -49,6 +49,8 @@ function ApiPublisher(obj) {
 			}) ;
 		}) ;
 	},65536) ;
+	
+	return that.handle.bind(that) ;
 }
 
 /**
@@ -184,12 +186,15 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		sendReturn({value:t,status:status});
 	};
 	
-	function errorCB(err,details) {
+	function errorCB(err,status) {
 		if (cache && key && cache[key]) {
 			delete cache[key];
 		}
-		DEBUG(details?29:20,err,details) ;
-		sendReturn({value:err,status:500});
+		DEBUG(status?29:20,err,status) ;
+		if (!(err instanceof Error))
+			err = new Error(err.toString()) ;
+		
+		sendReturn({value:{error:err.message,cause:err.stack} ,status:status || 500});
 	} ;
 
 	var fn = that.api[name].fn ;
