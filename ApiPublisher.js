@@ -50,7 +50,9 @@ function ApiPublisher(obj) {
 		}) ;
 	},65536) ;
 	
-	return that.handle.bind(that) ;
+	var boundHandler = that.handle.bind(that) ;
+	boundHandler.prototype = that ; 	// So that users can say 'api.prototype.Xxx = ()'
+	return boundHandler ;
 }
 
 /**
