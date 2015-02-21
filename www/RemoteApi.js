@@ -1,7 +1,7 @@
 window.RemoteApi = (function(){
 	function Nothing(){} ;
 
-	 function SyncPromise(resolver) {
+	function SyncPromise(resolver) {
 		var fn = function(result,error){
 			try {
 				return resolver.apply(this,arguments) ;
@@ -13,6 +13,20 @@ window.RemoteApi = (function(){
 		return fn ;
 	};
 	
+	Object.defineProperty(Function.prototype,"$asyncbind",{
+		value:function(self,catcher) {
+			var fn = this ;
+			fn.isAsync = true ;
+			return function(){
+				try {
+					return fn.apply(self,arguments);
+				} catch (ex) {
+					catcher(ex);
+				}
+			} ; 
+		}
+	}) ;
+
 	function hash(o) {
 		if (o===undefined) return "undefined" ;
 		if (o===null) return "null" ;
