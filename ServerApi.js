@@ -22,12 +22,7 @@ function callRemoteFuncBack(that,path,args) {
 
 		var uriRequest = URL.parse(path) ;
 		uriRequest.method = "POST" ;
-		if (that.headers) {
-			uriRequest.headers = uriRequest.headers || {} ;
-			Object.keys(that.headers).forEach(function(k){
-				uriRequest.headers[k] = that.headers[k] ;
-			}) ;
-		}
+		that.setHttpOptions(uriRequest) ;
 			
 		var tStart = Date.now() ;
 		var x = http.request(uriRequest, function(res){
@@ -110,6 +105,15 @@ ServerApi.prototype.onError = function(error){};
 ServerApi.prototype.headers = null ;
 ServerApi.prototype.serializer = null ;
 ServerApi.prototype.reviver = null ;
+ServerApi.prototype.setHttpOptions = function(url) {
+	var that = this ;
+	if (that.headers) {
+		url.headers = url.headers || {} ;
+		Object.keys(that.headers).forEach(function(k){
+			url.headers[k] = that.headers[k] ;
+		}) ;
+	}
+}
 
 ServerApi.load = function(url) {
 	return new nodent.SyncPromise(function($return,$error) {
