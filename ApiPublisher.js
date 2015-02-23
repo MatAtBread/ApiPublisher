@@ -137,16 +137,28 @@ ApiPublisher.prototype.sendReturn = function(req,rsp,result,status) {
 }
 
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
-	var that = this ;
+	var args,that = this ;
 
+	args = name.split("?") ;
+	name = args[0] ;
 	if (!that.api[name]) {
 		return errorCB(new Error("Endpoint not found: "+name),404) ;
 	}
 	
 	// Because we like to accept nicely posted JSON, _and_ form input data, we 
 	// test the body type
-	var args = (req.body instanceof Array) ? req.body:[req.body] ; // Wasn't a JSON encoded argument list, so wrap it like it was
+	if (req.method=="POST")
+		args = req.body; 
+	else if (req.method=="GET") {
+		if (args[1]) {
+			args = JSON.parse(decodeURIComponent(args[1])) ;
+		} else args = [] ;
+	} else
+		return errorCB(new Error("Method not allowed: "+req.method),405) ;
 	
+	if (!Array.isArray(args))
+		args = [args] ; // Wasn't a JSON encoded argument list, so wrap it like it was
+
 	var tStart = Date.now() ;
 	function sendReturn(result){
 		if (rsp.headersSent) {
