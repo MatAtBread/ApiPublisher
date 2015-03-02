@@ -74,8 +74,8 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 	var self = this ;
 	if (path)
 		self.path = path ;
-	nodent.Promise.mapPromiseCall(nodent.map(self.api, function(e){
-		return function(ok,error) {
+	nodent.map(self.api, function(e){
+		return new nodent.Thenable(function(ok,error) {
 			var fn = self.api[e].fn ;
 			if (fn[req.apiVersion])
 				fn = fn[req.apiVersion] ;
@@ -93,8 +93,8 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 			} else {
 				ok(self.names[e]) ;
 			}
-		};
-	}),ok,$error) ;
+		});
+	}).then(ok,$error) ;
 };
 
 var stdHeaders = {
@@ -215,7 +215,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	if (fn[req.apiVersion])
 		fn = fn[req.apiVersion] ; 
 	
-	return nodent.Promise.mapPromiseCall(fn.apply(context,args),returnCB,errorCB) ;
+	return fn.apply(context,args).then(returnCB,errorCB) ;
 };
 
 ApiPublisher.prototype.cacheObject = function(obj) {

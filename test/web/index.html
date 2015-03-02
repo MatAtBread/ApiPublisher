@@ -1,20 +1,22 @@
 <html>
 <script src="RemoteApi.js"></script>
 <script>
+//Test using "nodent" compiled at the server (nodented.njs)
+//Nodent on the client requires at "top-level" error handler
+//called $error()
+window.$error = function(ex) {
+	console.error(ex) ;
+}
+
 // Test using client-side JavaScript
 // Load the remote API
-RemoteApi.load("/testapi")(function(api){
+RemoteApi.load("/testapi").then(function(api){
 // Once it's loaded, call the async-function "delay"	
 	api.delay(400)(function(result){
 // Display the result ;		
 		document.getElementById("flutter").innerText = "Flutter was "+result.flutter+" ms" ;
 	},$error) ;
-}) ;
-
-// Test using "nodent" compiled at the server (nodented.njs)
-// Nodent on the client requires at "top-level" error handler
-// called $error()
-window.$error = console.error.bind(console) ;
+},$error) ;
 </script>
 <script src="nodented.njs"></script>
 

@@ -16,7 +16,7 @@ function getOwnPropertyDescriptions(obj) {
 } ;
 
 function callRemoteFuncBack(that,path,args) {
-	return new nodent.SyncPromise(function(callback,error) {
+	return new nodent.Thenable(function(callback,error) {
 		if (!callback) callback = that.onSuccess.bind(that) ;
 		if (!error) error = that.onError.bind(that) ;
 
@@ -116,7 +116,7 @@ ServerApi.prototype.setHttpOptions = function(url) {
 }
 
 ServerApi.load = function(url) {
-	return new nodent.SyncPromise(function($return,$error) {
+	return new nodent.Thenable(function($return,$error) {
 		new ServerApi(url,function(ex){
 			if (ex) $error(ex) ;
 			else $return(this) ;

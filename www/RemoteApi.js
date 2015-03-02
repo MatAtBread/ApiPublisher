@@ -1,7 +1,7 @@
 window.RemoteApi = (function(){
 	function Nothing(){} ;
 
-	function SyncPromise(resolver) {
+	function Thenable(resolver) {
 		var fn = function(result,error){
 			try {
 				return resolver.apply(this,arguments) ;
@@ -69,7 +69,7 @@ window.RemoteApi = (function(){
 
 	function RemoteApi(url,options,onLoad) {
 		function callRemoteFuncBack(that,path,name,args) {
-			return new SyncPromise(function(callback,error) {
+			return new Thenable(function(callback,error) {
 				that.apiStart(path,name,args) ;
 				if (!callback) callback = that.onSuccess ;
 				if (!error) error = that.onError ;
@@ -165,13 +165,13 @@ window.RemoteApi = (function(){
 						that[i] = function() {
 							var key = cacheKey(arguments,api[i].ttl.on) ;
 							if (api[i].cache[key] && (((Date.now()-api[i].cache[key].t)/1000) < api[i].ttl.t)) {
-								return new SyncPromise(function(ok,error) {
+								return new Thenable(function(ok,error) {
 									that.log("Cache hit "+i) ;
 									return (ok || that.onSuccess)(api[i].cache[key].data) ;
 								}) ;
 							} 
 							var cb = callRemoteFuncBack(this,url,i,arguments) ;
-							return new SyncPromise(function(ok,err) {
+							return new Thenable(function(ok,err) {
 								return cb(function(d){
 									that.log("Cache miss "+i) ;
 									api[i].cache[key] = {t:Date.now(),data:d} ;
@@ -197,7 +197,7 @@ window.RemoteApi = (function(){
 				} else {
 					var staticVal = that.reviver?that.reviver("",api[i]):api[i] ; 
 					that[i] = function() {
-						return new SyncPromise(function(ok,error) {
+						return new Thenable(function(ok,error) {
 							return (ok || that.onSuccess)(staticVal) ;
 						}) ;
 					} ;
@@ -247,9 +247,9 @@ window.RemoteApi = (function(){
 	} ;
 
 	RemoteApi.load = function(url,options) {
-		return new SyncPromise(function($return,$error) {
+		return new Thenable(function($return,$error) {
 			new RemoteApi(url,options,function(ex){
-				if (ex) $error(ex) ;
+				if (ex) $error && $error(ex) ;
 				else $return(this) ;
 			}) ;
 		});
