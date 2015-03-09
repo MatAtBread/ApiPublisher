@@ -78,12 +78,12 @@ window.RemoteApi = (function(){
 					return path+"/"+name+"/"+that.version+":"+x.status+" - "+new Date().toString() ;
 				};
 				x.open("POST", path+"/"+name+"/"+that.version, true);
-				x.setRequestHeader("Content-Type","application/json") ;
+				x.setRequestHeader("Content-Type","application/json; charset=utf-8") ;
 				x.setRequestHeader("documentreferer", document.referrer);
 				setHeaders(x,that.headers) ;
 				x.onreadystatechange = function() {
 					if (x.readyState==4) {
-						var contentType = x.getResponseHeader("Content-Type") ; 
+						var contentType = x.getResponseHeader("Content-Type").split(";")[0] ; 
 						if (contentType=="application/json" || contentType=="text/plain") {
 							var data = x.responseText ;
 							try {
