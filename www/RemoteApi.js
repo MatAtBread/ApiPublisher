@@ -4,12 +4,12 @@ window.RemoteApi = (function(){
 	function Thenable(resolver) {
 		var fn = function(result,error){
 			try {
-				return resolver.apply(this,arguments) ;
+				return resolver.call(this,result,error) ;
 			} catch(ex) {
-				return error.apply(this,ex) ;
+				return error.call(this,ex) ;
 			}
 		} ;
-		fn.then = function(ret,err){ return fn(ret,err); }
+		fn.then = fn ;
 		return fn ;
 	};
 	
@@ -17,13 +17,15 @@ window.RemoteApi = (function(){
 		value:function(self,catcher) {
 			var fn = this ;
 			fn.isAsync = true ;
-			return function(){
+			var thenable = function(result,error){
 				try {
-					return fn.apply(self,arguments);
+					return fn.call(self,result,error);
 				} catch (ex) {
-					catcher(ex);
+					return catcher.call(self,ex);
 				}
 			} ; 
+			thenable.then = thenable ;
+			return thenable ;
 		}
 	}) ;
 
