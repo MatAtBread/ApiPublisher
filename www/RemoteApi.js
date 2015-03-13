@@ -85,7 +85,8 @@ window.RemoteApi = (function(){
 				setHeaders(x,that.headers) ;
 				x.onreadystatechange = function() {
 					if (x.readyState==4) {
-						var contentType = x.getResponseHeader("Content-Type").split(";")[0] ; 
+						var contentType = x.getResponseHeader("Content-Type") ;
+						if (contentType) contentType = contentType.split(";")[0] ; 
 						if (contentType=="application/json" || contentType=="text/plain") {
 							var data = x.responseText ;
 							try {
