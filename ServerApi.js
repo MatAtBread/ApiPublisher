@@ -30,7 +30,7 @@ function callRemoteFuncBack(that,path,args) {
 			var body = "" ;
 			res.on('data', function (chunk) { body += chunk ; });
 			res.once('end',function(){
-				var contentType = x.getResponseHeader("Content-Type") ;
+				var contentType = res.headers['content-type'] ;
 				if (contentType) contentType = contentType.split(";")[0] ; 
 				if (res.statusCode==200) {
 					DEBUG(1,path,args,res.statusCode,(Date.now()-tStart)+"ms") ;
