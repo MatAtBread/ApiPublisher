@@ -10,12 +10,10 @@ document.getElementById("test").onclick = function() {
 	document.getElementById("flutter").innerText = "Flutter was "+result.flutter+" ms." ;
 }
 
+// Test the clientInstance nested APIs are automatically available
 var greeting = await remote.always.hello() ; 
 console.log(greeting) ;
 if (greeting != "I am nested")
-	alert("remote.always.hello failed");
+	alert("remote.always.hello failed: "+greeting);
 
-//debugger ;
-//var nested = await RemoteApi.load(remote.nested(1)) ;
-//console.log(await nested.hello()) ;
 })() ;

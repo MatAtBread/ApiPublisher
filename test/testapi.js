@@ -37,11 +37,7 @@ var api = {
 	client:async function(username) {
 		return username+" - don't waste bandwidth!" ;
 	},
-	// An example of a nested API that is conditional (and loaded on every request)
-	nested:async function(include) {
-		return include?nested:null ;
-	},
-	// An example of a nested API this is static (i.e. loaded once)
+	// An example of a nested API
 	always:async function() {
 		return nested ;
 	}

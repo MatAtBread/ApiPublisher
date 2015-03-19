@@ -118,6 +118,7 @@ var stdHeaders = {
 ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
 	var that = this ;
 	this.getRemoteApi(req,null,function(instance){
+//		instance._remotePath = req.originalUrl ;
 		rsp.writeHead(200, stdHeaders);
 		rsp.end(JSON.stringify(instance,that.serializer(req,rsp)));
 	}) ;
@@ -205,8 +206,14 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	}
 	
 	function returnCB(t,status) {
-		if ((!status || status==200) && cache && key) {
-			cache[key] = {data:t, expires:Date.now()+1000*that.names[name].ttl.server} ;
+		if (!status || status==200) { 
+			if (t instanceof ApiPublisher) {
+				t.sendRemoteApi(req,rsp) ;
+				return ;
+			}
+			if (cache && key) {
+				cache[key] = {data:t, expires:Date.now()+1000*that.names[name].ttl.server} ;
+			}
 		}
 		sendReturn({value:t,status:status});
 	};
@@ -265,6 +272,7 @@ ApiPublisher.prototype.handle = function(req,rsp,next) {
 		var call = decodeURIComponent(path.pop()) ;
 		var api = this ;
 		for (var p=1; p<path.length; p++) {
+			// nested clientInstance
 			api = api.nested[path[p]] ;
 			if (!api)
 				return (next && next()) ;

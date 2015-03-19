@@ -10,8 +10,6 @@ ApiPublisher has been in use since November 2013 in production systems.
 NB: ApiPublisher v1.1.x has a breaking change. In order to be compatible with Express 4, and as part of optimizing nested APIs, you must now pass
 `api.handle` to `app.use()`, NOT just `api`. RemoteApi now automatically provisions nested APIs.
 
-In v1.1.0 there is no automatic mechanism to load nested APIs on-the-fly. They must be declared as clientInstance. This will be fixed in a subsequent release.
-
 Installation
 ============
 
@@ -493,9 +491,7 @@ An API can include another API, allowing for conditional nesting, for example:
 		}
 	} ;
 
-	// This is IMPORTANT. Loading remote, nested APIs that are NOT client instances (i.e. 
-	// shipped in the initial request) is NOT supported in v1.1.0. This will be corrected
-	// in a later version.
+	// This is important - nested APIs must be clieniInstances
 	myApi.userApi = clientInstance = [] ;
 
 In this example, if a call is made to "/myApi", the return API will contain a nest API iff. the request has been authenticated by some mechanism that has set a session. Without authenication, 
