@@ -61,6 +61,20 @@ function callRemoteFuncBack(that,path,args) {
 	});
 }
 
+function constructApi(serverApi,baseUrl,that,api) {
+	Object.keys(api).forEach(function(i){
+		if (api[i]._isRemoteApi) {
+			delete api[i]._isRemoteApi ;
+			that[i] = {} ;
+			constructApi(serverApi,baseUrl+"/"+i,that[i],api[i]) ;
+		} else {
+			that[i] = function() { 
+				return callRemoteFuncBack(serverApi,baseUrl+"/"+i+"/"+serverApi.version,arguments) ; 
+			};
+		}
+	}) ;
+}
+
 function ServerApi(url,onLoad) {
 	var that = this ;
 	if (!onLoad) onLoad = function(){};
@@ -89,11 +103,7 @@ function ServerApi(url,onLoad) {
 			res.on('data', function (chunk) { body += chunk ; });
 			res.once('end',function(){
 				var api = JSON.parse(body) ;
-				Object.keys(api).forEach(function(i){
-					that[i] = function() { 
-						return callRemoteFuncBack(that,url+"/"+i+"/"+that.version,arguments) ; 
-					};
-				}) ;
+				constructApi(that,url,that,api) ;
 				onLoad.call(that,null) ;
 			}) ;
 		}

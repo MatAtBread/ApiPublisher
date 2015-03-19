@@ -7,6 +7,11 @@ ApiPublisher works with Connect, Express and Nodent [https://www.npmjs.org/packa
 
 ApiPublisher has been in use since November 2013 in production systems.
 
+NB: ApiPublisher v1.1.x has a breaking change. In order to be compatible with Express 4, and as part of optimizing nested APIs, you must now pass
+`api.handle` to `app.use()`, NOT just `api`. RemoteApi now automatically provisions nested APIs.
+
+In v1.1.0 there is no automatic mechanism to load nested APIs on-the-fly. They must be declared as clientInstance. This will be fixed in a subsequent release.
+
 Installation
 ============
 
@@ -46,6 +51,8 @@ and:
 Changelog
 =========
 
+19Feb15: NB: ApiPublisher v1.1.x has a breaking change. In order to be compatible with Express 4, and as part of optimizing nested APIs, you must now pass `api.handle` to `app.use()`, NOT just `api`. RemoteApi now automatically provisions nested APIs.
+
 17Feb15: Updated to use the latest ES7-compliant version of Nodent and Promises.
 
 14Jul14: Implement ApiPublisher.prototype.sendReturn(). Allow for "text/plain" responses which are not parsed into JSON but simply returned to the callee asynchronously as strings.
@@ -83,9 +90,9 @@ To expose the APIs in nodejs, create a new ApiPublisher from your object and ser
 		...
 	var publishedApi = new ApiPublisher(myAPI) ;
 		...
-	var app = connect();	// This example uses Sencha Connect
-	app.use(connect.json())	// Published APIs expect a JSON encoded request.body
-		.use("/api", publishedApi)  ;
+	var app = connect();		// This example uses Sencha Connect	
+	app.use(connect.json());	// Published APIs expect a JSON encoded request.body
+	app.use("/api", publishedApi.handle)  ; // NB: As of ApiPublisher v1.1.x & Express 4, the ".handle" is required
 	
 	// Iff we want to make the API available to browsers, 
 	// also expose the RemoteApi script for them to load
@@ -486,6 +493,9 @@ An API can include another API, allowing for conditional nesting, for example:
 		}
 	} ;
 
+	// This is IMPORTANT. Loading remote, nested APIs that are NOT client instances (i.e. 
+	// shipped in the initial request) is NOT supported in v1.1.0. This will be corrected
+	// in a later version.
 	myApi.userApi = clientInstance = [] ;
 
 In this example, if a call is made to "/myApi", the return API will contain a nest API iff. the request has been authenticated by some mechanism that has set a session. Without authenication, 

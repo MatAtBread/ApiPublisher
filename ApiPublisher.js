@@ -20,6 +20,7 @@ function ApiPublisher(obj) {
 	that.api = {} ;
 	that.names = {} ;
 	that.cache = {} ;
+	that.nested = {} ;
 	that.context = obj ;
 
 	for (var i in obj) if (obj.hasOwnProperty(i)){
@@ -50,10 +51,16 @@ function ApiPublisher(obj) {
 		}) ;
 	},65536) ;
 	
-	var boundHandler = that.handle.bind(that) ;
-	boundHandler.prototype = that ; 	// So that users can say 'api.prototype.Xxx = ()'
-	return boundHandler ;
+	that.handle = ApiPublisher.prototype.handle.bind(this) ;
+	return that ;
+//	var boundHandler = that.handle.bind(that) ;
+//	boundHandler.prototype = that ; 	// So that users can say 'api.prototype.Xxx = ()'
+//	return boundHandler ;
 }
+
+//ApiPublisher.prototype.set = function(key,value){
+	// Required for Express v4 compatability
+//}
 
 /**
  * Return an object whose keys represent the remotely callable 
@@ -83,9 +90,13 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 				if (fn.length != fn.clientInstance.length) {
 					DEBUG(20,"Warning: Remote instance function arguments not the same as declaration:",e) ;
 				}
-				return nodent.Promise.mapPromiseCall(fn.apply({request:req},fn.clientInstance),function(instanceData){
+				return fn.apply({request:req},fn.clientInstance).then(function(instanceData){
 					if (instanceData instanceof ApiPublisher) {
-						 instanceData.getRemoteApi(req, e, ok) ;
+						 self.nested[e] = instanceData ;
+						 instanceData.getRemoteApi(req, e, function(api){
+							 api._isRemoteApi = true ;
+							 ok(api) ;
+						 }) ;
 					} else {
 						ok(instanceData) ;
 					}
@@ -251,7 +262,14 @@ ApiPublisher.prototype.handle = function(req,rsp,next) {
 	if (path.length<2 || path[1]=="") {
 		this.sendRemoteApi(req,rsp) ;
 	} else {
-		this.callRemoteApi(decodeURIComponent(path.pop()),req,rsp) ;	// Client is making a remote call
+		var call = decodeURIComponent(path.pop()) ;
+		var api = this ;
+		for (var p=1; p<path.length; p++) {
+			api = api.nested[path[p]] ;
+			if (!api)
+				return (next && next()) ;
+		}
+		api.callRemoteApi(call,req,rsp) ;	// Client is making a remote call
 	}
 } ;
 

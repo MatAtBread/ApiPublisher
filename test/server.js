@@ -1,6 +1,6 @@
 /* NPMs */
 var nodent = require('nodent')() ;
-global.Promise = global.Promise || nodent.Promise ;
+global.Promise = global.Promise || nodent.Thenable ;
 var http = require('http') ;
 var connect = require('connect');
 var fs = require('fs');
@@ -19,7 +19,7 @@ var app = connect()
 
 	// Remote APIs available under "/testapi", e.g. the descriptor is 
 	// at "/testapi" and the "delay" function in "/testapi/delay"
-	.use("/testapi",api)			
+	.use("/testapi",api.handle)			
 	
 	// Give browser access to the remote API loader
 	.use("/RemoteApi.js",remoteApi.sendRemoteApi)				

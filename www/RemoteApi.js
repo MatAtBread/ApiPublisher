@@ -197,6 +197,7 @@ window.RemoteApi = (function(){
 						that[i].clearCache = Nothing ;
 					}
 					that[i].parameters = api[i].parameters ;
+					that[i].remoteName = url+"/"+i ; 
 				} else {
 					var staticVal = that.reviver?that.reviver("",api[i]):api[i] ; 
 					that[i] = function() {
@@ -205,16 +206,23 @@ window.RemoteApi = (function(){
 						}) ;
 					} ;
 					that[i].clearCache = Nothing ;
+					that[i].remoteName = url+"/"+i ; 
+					if (api[i]._isRemoteApi) {
+						delete staticVal._isRemoteApi ;
+						new RemoteApi(that[i],options,function(){
+							that[i] = this ;
+						}) ;
+					}
 				}
-				that[i].remoteName = url+"/"+i ; 
 			}) ;
 			onLoad.call(that,null) ;
 		}
 		
 		if (typeof url === 'function') {
-			url()(function(api){
-				loadApi(url.remoteName,api) ;
-			}) ;
+			function loadAsync(api){
+				loadApi(url.remoteName,api);
+			}
+			url()(loadAsync) ;
 		} else {
 			var x = new XMLHttpRequest() ;
 			x.open("GET", url+"/"+that.version, true);
