@@ -81,7 +81,7 @@ window.RemoteApi = (function(){
 				};
 				x.open("POST", path+"/"+name+"/"+that.version, true);
 				x.setRequestHeader("Content-Type","application/json; charset=utf-8") ;
-				x.setRequestHeader("documentreferer", document.referrer);
+				x.setRequestHeader("documentReferer", document.referrer);
 				setHeaders(x,that.headers) ;
 				x.onreadystatechange = function() {
 					if (x.readyState==4) {
