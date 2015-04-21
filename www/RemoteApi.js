@@ -1,32 +1,27 @@
 window.RemoteApi = (function(){
 	function Nothing(){} ;
 
-	function Thenable(resolver) {
-		var fn = function(result,error){
+	function thenTryCatch(self,catcher) {
+		var resolver = this ;
+		function thenable(result,error){
 			try {
-				return resolver.call(this,result,error) ;
-			} catch(ex) {
-				return error.call(this,ex) ;
+				return resolver.call(self,result,error);
+			} catch (ex) {
+				return (error||catcher).call(self,ex);
 			}
-		} ;
-		fn.then = fn ;
-		return fn ;
+		} ; 
+		thenable.then = thenable ;
+		return thenable ;
 	};
-	
+
+	function Thenable(thenable) {
+		thenable.then = thenable ;
+		return thenable ;
+	};
+
 	Object.defineProperty(Function.prototype,"$asyncbind",{
-		value:function(self,catcher) {
-			var fn = this ;
-			fn.isAsync = true ;
-			var thenable = function(result,error){
-				try {
-					return fn.call(self,result,error);
-				} catch (ex) {
-					return catcher.call(self,ex);
-				}
-			} ; 
-			thenable.then = thenable ;
-			return thenable ;
-		}
+		value:thenTryCatch,
+		writeable:true
 	}) ;
 
 	function hash(o) {
