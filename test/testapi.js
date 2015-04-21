@@ -1,5 +1,7 @@
 "use nodent-promise";
 
+var ApiPublisher = remoteApi = require('../index').ApiPublisher ;
+
 /*
  * "nodent" friendly setTimeout
  */
@@ -16,6 +18,13 @@ async function after(n) {
  * Any asynchronous operation could be substituted for the timeout - http, DB, whatever...
  */
 
+var nested = new ApiPublisher({
+	hello:async function() {
+		return "I am nested" ;
+	}
+});
+
+
 var api = {
 	delay:async function(period) {
 		period = period || 1000 ;
@@ -27,10 +36,15 @@ var api = {
 	},
 	client:async function(username) {
 		return username+" - don't waste bandwidth!" ;
+	},
+	// An example of a nested API
+	always:async function() {
+		return nested ;
 	}
 } ;
 
-//Example of an API that resolves WITHOUT a round-trip on the client 
+//Example of APIs that resolves WITHOUT a round-trip on the client 
 api.client.clientInstance = ["Matt"] ;
+api.always.clientInstance = [] ;
 
 module.exports = api ;

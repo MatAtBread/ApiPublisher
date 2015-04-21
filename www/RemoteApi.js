@@ -76,7 +76,7 @@ window.RemoteApi = (function(){
 				};
 				x.open("POST", path+"/"+name+"/"+that.version, true);
 				x.setRequestHeader("Content-Type","application/json; charset=utf-8") ;
-				x.setRequestHeader("documentreferer", document.referrer);
+				x.setRequestHeader("documentReferer", document.referrer);
 				setHeaders(x,that.headers) ;
 				x.onreadystatechange = function() {
 					if (x.readyState==4) {
@@ -192,6 +192,7 @@ window.RemoteApi = (function(){
 						that[i].clearCache = Nothing ;
 					}
 					that[i].parameters = api[i].parameters ;
+					that[i].remoteName = url+"/"+i ; 
 				} else {
 					var staticVal = that.reviver?that.reviver("",api[i]):api[i] ; 
 					that[i] = function() {
@@ -200,16 +201,23 @@ window.RemoteApi = (function(){
 						}) ;
 					} ;
 					that[i].clearCache = Nothing ;
+					that[i].remoteName = url+"/"+i ; 
+					if (api[i]._isRemoteApi) {
+						delete staticVal._isRemoteApi ;
+						new RemoteApi(that[i],options,function(){
+							that[i] = this ;
+						}) ;
+					}
 				}
-				that[i].remoteName = url+"/"+i ; 
 			}) ;
 			onLoad.call(that,null) ;
 		}
 		
 		if (typeof url === 'function') {
-			url()(function(api){
-				loadApi(url.remoteName,api) ;
-			}) ;
+			function loadAsync(api){
+				loadApi(url.remoteName,api);
+			}
+			url()(loadAsync) ;
 		} else {
 			var x = new XMLHttpRequest() ;
 			x.open("GET", url+"/"+that.version, true);

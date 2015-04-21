@@ -30,15 +30,17 @@ function callRemoteFuncBack(that,path,args) {
 			var body = "" ;
 			res.on('data', function (chunk) { body += chunk ; });
 			res.once('end',function(){
+				var contentType = res.headers['content-type'] ;
+				if (contentType) contentType = contentType.split(";")[0] ; 
 				if (res.statusCode==200) {
 					DEBUG(1,path,args,res.statusCode,(Date.now()-tStart)+"ms") ;
 					var data = body ;
-					if (res.headers['content-type'].split(";")[0]=="application/json")
+					if (contentType=="application/json")
 						data = !data?data:JSON.parse(data,that.reviver) ;
 					callback(data) ;
 				} else {
 					DEBUG(25,path,args,res.statusCode,(Date.now()-tStart)+"ms\n"+body) ;
-					if (res.headers['content-type'].split(";")[0]=="application/json") {
+					if (contentType=="application/json") {
 						var exception = JSON.parse(body,that.reviver) ;
 						var exc = new Error(body) ;
 						Object.defineProperties(exc, getOwnPropertyDescriptions(exception)) ;
@@ -57,6 +59,20 @@ function callRemoteFuncBack(that,path,args) {
 		x.write(JSON.stringify(Array.prototype.slice.call(args),that.serializer)) ;
 		x.end() ;
 	});
+}
+
+function constructApi(serverApi,baseUrl,that,api) {
+	Object.keys(api).forEach(function(i){
+		if (api[i]._isRemoteApi) {
+			delete api[i]._isRemoteApi ;
+			that[i] = {} ;
+			constructApi(serverApi,baseUrl+"/"+i,that[i],api[i]) ;
+		} else {
+			that[i] = function() { 
+				return callRemoteFuncBack(serverApi,baseUrl+"/"+i+"/"+serverApi.version,arguments) ; 
+			};
+		}
+	}) ;
 }
 
 function ServerApi(url,onLoad) {
@@ -87,11 +103,7 @@ function ServerApi(url,onLoad) {
 			res.on('data', function (chunk) { body += chunk ; });
 			res.once('end',function(){
 				var api = JSON.parse(body) ;
-				Object.keys(api).forEach(function(i){
-					that[i] = function() { 
-						return callRemoteFuncBack(that,url+"/"+i+"/"+that.version,arguments) ; 
-					};
-				}) ;
+				constructApi(that,url,that,api) ;
 				onLoad.call(that,null) ;
 			}) ;
 		}
