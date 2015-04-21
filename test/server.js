@@ -1,6 +1,6 @@
 /* NPMs */
 var nodent = require('nodent')() ;
-global.Promise = global.Promise || nodent.Thenable ;
+global.Promise = nodent.Thenable ;
 var http = require('http') ;
 var connect = require('connect');
 var fs = require('fs');
