@@ -27,7 +27,7 @@ var app = connect()
 	// Parse & cache .njs files on demand (nothing to do with ApiPublisher, 
 	// just a simple example of nodent compiled on the server for use in 
 	// a browser
-	.use(nodent.generateRequestHandler('./web',null,{enableCache:true,compiler:{es7:true,promises:true}}))
+	.use(nodent.generateRequestHandler('./web',null,{runtime:true,enableCache:true,compiler:{es7:true,promises:true}}))
 	
 	// Static files for the web-browser test
 	.use(connect.static('./web',{maxAge:0})); 	 

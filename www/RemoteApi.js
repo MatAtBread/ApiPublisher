@@ -1,26 +1,13 @@
 window.RemoteApi = (function(){
 	function Nothing(){} ;
 
-	function thenTryCatch(self,catcher) {
-		var resolver = this ;
-		function thenable(result,error){
-			try {
-				return resolver.call(self,result,error);
-			} catch (ex) {
-				return (error||catcher).call(self,ex);
-			}
-		} ; 
-		thenable.then = thenable ;
-		return thenable ;
-	};
-
 	function Thenable(thenable) {
 		thenable.then = thenable ;
 		return thenable ;
 	};
-
+	
 	Object.defineProperty(Function.prototype,"$asyncbind",{
-		value:thenTryCatch,
+		value:<@$asyncbind@>,
 		writeable:true
 	}) ;
 

@@ -1,13 +1,13 @@
 {
   "name": "apipublisher",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "Async JS API remoting",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "nodent": "^1.1.8"
+    "nodent": "^1.2.0"
   },
   "devDependencies": {
     "connect": "2.x.x"
