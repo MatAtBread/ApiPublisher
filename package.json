@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "nodent": "^1.2.1"
+    "nodent": "^1.2.4"
   },
   "devDependencies": {
     "connect": "2.x.x"

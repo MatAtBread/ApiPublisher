@@ -49,6 +49,8 @@ and:
 Changelog
 =========
 
+13May15: Allow ServerApi.load() to accept a Url object instead of a string url, to allow for additional options (such as the agent field) to be passed to Node's http module.
+
 19Feb15: NB: ApiPublisher v1.1.x has a breaking change. In order to be compatible with Express 4, and as part of optimizing nested APIs, you must now pass `api.handle` to `app.use()`, NOT just `api`. RemoteApi now automatically provisions nested APIs.
 
 17Feb15: Updated to use the latest ES7-compliant version of Nodent and Promises.

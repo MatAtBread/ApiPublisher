@@ -91,8 +91,12 @@ function ServerApi(url,onLoad) {
 	}
 	u.pathname = path.join("/") ;
 	url = URL.format(u) ;
-	
-	http.get(url+"/"+that.version, function(res) {
+	var accessURL = URL.parse(url+"/"+that.version) ;
+	Object.keys(u).forEach(function(k){
+		if (!(k in accessURL))
+			accessURL[k] = u[k] ;
+	}) ;
+	http.get(accessURL, function(res) {
 		if (res.statusCode != 200) {
 			var ex = new Error("HTTP response "+res.statusCode+" "+url.toString()) ;
 			ex.errorObject = res ;
