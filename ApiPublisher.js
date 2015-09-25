@@ -1,13 +1,13 @@
 /**
  * ApiPublisher
  * Make server-side JS functions callable from remote clients
- * v0.1 
  * - only supports static calls (no guarantees about "this" or "new")
- * - only supports async callbacks in the "funcback" style
- * 	 i.e. those that have the form func(args...)(okCallback,errorCallback)
+ * - only supports async callbacks in the Promise style
+ * 	 i.e. those that have the form func(args...).then(okCallback,errorCallback)
  */
 
-var nodent = require('nodent')({use:['map']}) ;
+var nodent = require('nodent')() ;
+var map = nodent.require('map') ;
 var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
 
 /**
@@ -58,9 +58,6 @@ function ApiPublisher(obj) {
 //	return boundHandler ;
 }
 
-//ApiPublisher.prototype.set = function(key,value){
-	// Required for Express v4 compatability
-//}
 
 /**
  * Return an object whose keys represent the remotely callable 
@@ -81,7 +78,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 	var self = this ;
 	if (path)
 		self.path = path ;
-	nodent.map(self.api, function(e){
+	map(self.api, function(e){
 		return new nodent.Thenable(function(ok,error) {
 			var fn = self.api[e].fn ;
 			if (fn[req.apiVersion])
