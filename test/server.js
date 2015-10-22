@@ -1,5 +1,5 @@
 /* NPMs */
-var nodent = require('nodent')() ;
+var nodent = require('nodent')({log:function(){}}) ;
 global.Promise = nodent.Thenable ;
 var http = require('http') ;
 var connect = require('connect');
@@ -34,7 +34,7 @@ var app = connect()
 
 http.createServer(app).listen(1966) ;
 
-console.log("Test server listening on port 1966. Now run\n\tnode client.js\nor goto http://localhost:1966/\n") ;
+console.log("Test server listening on http://localhost:1966/\n") ;
 
 // Call the API locally to show it's the same on client & server
 var log = console.log.bind(console) ;

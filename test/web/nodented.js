@@ -7,7 +7,6 @@ window.remote = await RemoteApi.load("/testapi") ;
 // and display the result.
 document.getElementById("test").onclick = function() {
 	var result = await remote.delay(300) ;
-debugger;
 	document.getElementById("flutter").innerText = "Flutter was "+result.flutter+" ms." ;
 }
 

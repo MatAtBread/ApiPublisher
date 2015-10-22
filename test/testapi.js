@@ -7,7 +7,7 @@ var ApiPublisher = remoteApi = require('../index').ApiPublisher ;
  */
 
 async function after(n) {
-	setTimeout($return,n) ;
+	setTimeout(function(){ async return },n) ;
 }
 
 
