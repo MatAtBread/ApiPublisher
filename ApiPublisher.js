@@ -6,7 +6,7 @@
  * 	 i.e. those that have the form func(args...).then(okCallback,errorCallback)
  */
 
-var nodent = require('nodent')() ;
+var nodent = require('nodent')({dontInstallRequireHook:true}) ;
 var map = nodent.require('map') ;
 var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
 
@@ -203,6 +203,9 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 	}
 	
 	function returnCB(t,status) {
+		if (nodent.isThenable(t)) {
+			return t.then(returnCB,errorCB) ;
+		}
 		if (!status || status==200) { 
 			if (t instanceof ApiPublisher) {
 				t.sendRemoteApi(req,rsp) ;
