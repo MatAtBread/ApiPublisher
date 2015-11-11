@@ -269,15 +269,35 @@ ApiPublisher.prototype.handle = function(req,rsp,next) {
 	if (path.length<2 || path[1]=="") {
 		this.sendRemoteApi(req,rsp) ;
 	} else {
+		var self = this ;
+		path.shift() ;
 		var call = decodeURIComponent(path.pop()) ;
-		var api = this ;
-		for (var p=1; p<path.length; p++) {
-			// nested clientInstance
-			api = api.nested[path[p]] ;
-			if (!api)
-				return (next && next()) ;
-		}
-		api.callRemoteApi(call,req,rsp) ;	// Client is making a remote call
+		
+		(function walkPath() {
+			if (path.length===0)
+				return self.callRemoteApi(call,req,rsp) ;	// Client is making a remote call
+			
+			var e = path.shift() ;
+			var subApi = self.nested[e] ;
+			if (subApi)
+				return subApi.callRemoteApi(call,req,rsp) ;
+
+			if (self.api[e] &&
+				self.api[e].fn &&
+				self.api[e].fn.clientInstance && 
+				self.api[e].fn.clientInstance.length===0) {
+				
+				return self.api[e].fn.apply({request:req}).then(function(instanceData){
+					if (instanceData instanceof ApiPublisher) {
+						 self.nested[e] = instanceData ;
+						 path.unshift(e) ;
+						 return walkPath() ;
+					} 
+					return next() ;
+				},next) ;
+			}
+			return next(/* Could not find/load nested API*/) ;
+		})() ;
 	}
 } ;
 
