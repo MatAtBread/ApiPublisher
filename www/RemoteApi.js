@@ -11,16 +11,24 @@ window.RemoteApi = (function(){
 		writeable:true
 	}) ;
 
+	function stringRepresentation(o) {
+		try {
+			return JSON.stringify(o) ;
+		} catch (ex) {
+			return o.toString() ;
+		}
+	}
+	
 	function hash(o) {
 		if (o===undefined) return "undefined" ;
 		if (o===null) return "null" ;
 		if (typeof o==="object"){
-			var h = "";
-			Object.keys(o).forEach(function(k) { h += hash(o[k])}) ;
+			var h = hash(stringRepresentation(o));
+			Object.keys(o).forEach(function(k) { h += hash(k)+hash(o[k])}) ;
 			return hash(h) ;
 		} else {
 			var h = 0;
-			var s = o.toString() ;
+			var s = stringRepresentation(o) ;
 	        for (var i=0; i<s.length; i++)
 	            h = (((h << 5) - h) + s.charCodeAt(i)) & 0xFFFFFFFF;
 	        return h.toString(36) ;
@@ -169,7 +177,12 @@ window.RemoteApi = (function(){
 							}) ;
 						}
 						that[i].clearCache = function() {
-							api[i].cache = {} ;
+							if (arguments.length) {
+								var key = cacheKey(arguments,api[i].ttl.on) ;
+								delete api[i].cache[key] ;
+							} else {
+								api[i].cache = {} ;
+							}
 						}
 					} else {
 						that[i] = function() {
