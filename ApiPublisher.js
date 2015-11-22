@@ -42,11 +42,11 @@ function ApiPublisher(obj) {
 		var now = Date.now() ;
 		Object.keys(that.cache).forEach(function(k){
 			var j = Object.keys(that.cache[k]) ;
-			if (j && !j.length)
+			if (!j.length)
 				delete that.cache[k] ;
 			else j.forEach(function(e){
-				if (that.cache[k][j].expires < now)
-					delete that.cache[k][j] ;
+				if (that.cache[k][e].expires < now)
+					delete that.cache[k][e] ;
 			}) ;
 		}) ;
 	},65536) ;
