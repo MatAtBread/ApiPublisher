@@ -252,19 +252,16 @@ DEBUG(1,"Cache Entry",name,req.socket.remotePort,key,cacheEntry) ;
 			}
 			if (cacheEntry) {
 				sendPending(result) ;
-			} else {
-				cacheEntry = that.cache[name][key] = {} ;
+				Object.defineProperty(cacheEntry,'data',{
+					value:t,
+					enumerable:false,
+					writeable:true,
+					configurable:true
+				}) ;
+				cacheEntry.expires = Date.now()+1000*that.names[name].ttl.server ;
 			}
-//			cacheEntry.data = t;
-			Object.defineProperty(cacheEntry,'data',{
-				value:t,
-				enumerable:false,
-				writeable:true,
-				configurable:true
-			}) ;
-			cacheEntry.expires = Date.now()+1000*that.names[name].ttl.server ;
 		} else {
-			if (cache) {
+			if (cacheEntry) {
 				sendPending(result) ;
 				delete cacheEntry.data;
 				delete cacheEntry.expires;
