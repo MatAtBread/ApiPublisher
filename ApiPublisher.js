@@ -8,7 +8,7 @@
 
 var nodent = require('nodent')({dontInstallRequireHook:true}) ;
 var map = nodent.require('map') ;
-var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
+var DEBUG = global.DEBUG || (process.env.DEV ? function(l){ process.env.DEV<=l && console.log.apply(this,arguments); }:function(){}) ;
 
 /**
  * Create an object representing functions that can be called remotely
@@ -53,9 +53,6 @@ function ApiPublisher(obj) {
 	
 	that.handle = ApiPublisher.prototype.handle.bind(this) ;
 	return that ;
-//	var boundHandler = that.handle.bind(that) ;
-//	boundHandler.prototype = that ; 	// So that users can say 'api.prototype.Xxx = ()'
-//	return boundHandler ;
 }
 
 
@@ -106,16 +103,15 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
 };
 
 var stdHeaders = {
-		'Content-Type': 'application/json; charset=utf-8',
-		'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-		'Expires': 'Fri, 01 Jan 1990 00:00:00 GMT',
-		'pragma': 'no-cache'
+	'Content-Type': 'application/json; charset=utf-8',
+	'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+	'Expires': 'Fri, 01 Jan 1990 00:00:00 GMT',
+	'pragma': 'no-cache'
 } ;
 
 ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
 	var that = this ;
 	this.getRemoteApi(req,null,function(instance){
-//		instance._remotePath = req.originalUrl ;
 		rsp.writeHead(200, stdHeaders);
 		rsp.end(JSON.stringify(instance,that.serializer(req,rsp)));
 	}) ;
@@ -123,7 +119,7 @@ ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
 
 function stringRepresentation(o) {
 	try {
-		return JSON.stringify(o) ;
+		return JSON.stringify(o)+o.toString() ;
 	} catch (ex) {
 		return o.toString() ;
 	}
@@ -154,10 +150,12 @@ ApiPublisher.prototype.sendReturn = function(req,rsp,result,status) {
 }
 
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
-	var args,that = this ;
-
-	args = name.split("?") ;
+	var tStart = Date.now() ;
+	var args = name.split("?"),that = this ;
+	var fn, cacheEntry, key ;
+	
 	name = args[0] ;
+	DEBUG(1,"ApiPublisher",name,req.socket.remotePort,that.cache) ;
 	if (!that.api[name]) {
 		return errorCB(new Error("Endpoint not found: "+name),404) ;
 	}
@@ -170,13 +168,51 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		if (args[1]) {
 			args = JSON.parse(decodeURIComponent(args[1])) ;
 		} else args = [] ;
-	} else
+	} else {
 		return errorCB(new Error("Method not allowed: "+req.method),405) ;
+	}
 	
 	if (!Array.isArray(args))
 		args = [args] ; // Wasn't a JSON encoded argument list, so wrap it like it was
 
-	var tStart = Date.now() ;
+	// Proto-augment "this" with the current request so the remoted API can query session
+	// info etc.
+	var context = that.proxyContext(name,req,rsp,args) ;
+
+	// Is this result cachable on the server?
+	if (that.names[name].ttl && that.names[name].ttl.server) {
+		key = hash(that.cacheObject(context)) ;
+		if (key) {
+			that.cache[name] = that.cache[name] || {} ;
+			cacheEntry = that.cache[name][key] ;
+DEBUG(1,"Cache Entry",name,req.socket.remotePort,key,cacheEntry) ;
+			if (cacheEntry) {
+				if (cacheEntry.expires) {
+					if (cacheEntry.expires > Date.now()) {
+						return sendReturn({value:cacheEntry.data});
+					}
+					delete cacheEntry.expires ;
+					delete cacheEntry.data ;
+				}
+
+				if (cacheEntry.pending) {
+					// Another call is pending, and will return the data/error on completion
+					return cacheEntry.pending.push(sendReturn) ;
+				}
+			} else {
+				cacheEntry = that.cache[name][key] = {} ;
+			}
+			cacheEntry.pending = cacheEntry.pending || [] ;
+		}
+	}
+
+	fn = that.api[name].fn ;
+	if (fn[req.apiVersion])
+		fn = fn[req.apiVersion] ; 
+	
+	return fn.apply(context,args).then(returnCB,errorCB) ;
+
+	/* Send the response to the client */
 	function sendReturn(result){
 		if (rsp.headersSent) {
 			DEBUG(99,"Response already sent",name,args,result) ;
@@ -193,55 +229,65 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		}
 	} ;
 	
-	var cache = null, key = null ;
-	// Proto-augment "this" with the current request so the remoted API can query session
-	// info etc.
-	var context = that.proxyContext(name,req,rsp,args) ;
-
-	// Is this result cachable on the server?
-	if (that.names[name].ttl && that.names[name].ttl.server) {
-		key = hash(that.cacheObject(context)) ;
-		if (key) {
-			that.cache[name] = that.cache[name] || {} ;
-			cache = that.cache[name] ;
-			if (cache && cache[key] && cache[key].expires > Date.now()) {
-				return sendReturn({value:cache[key].data});
-			}
-		}
+	/* Send the result to any pending clients that are listening */
+	function sendPending(result) {
+		var pending = cacheEntry.pending ;
+		delete cacheEntry.pending ;
+		pending && pending.forEach(function(returner,idx){
+			returner(result) ;
+		}) ;
 	}
 	
+	/* Send a successful result, updating the cache if required */
 	function returnCB(t,status) {
 		if (nodent.isThenable(t)) {
 			return t.then(returnCB,errorCB) ;
 		}
+		
+		var result = {value:t,status:status} ;
 		if (!status || status==200) { 
 			if (t instanceof ApiPublisher) {
 				t.sendRemoteApi(req,rsp) ;
 				return ;
 			}
-			if (cache && key) {
-				cache[key] = {data:t, expires:Date.now()+1000*that.names[name].ttl.server} ;
+			if (cacheEntry) {
+				sendPending(result) ;
+			} else {
+				cacheEntry = that.cache[name][key] = {} ;
+			}
+//			cacheEntry.data = t;
+			Object.defineProperty(cacheEntry,'data',{
+				value:t,
+				enumerable:false,
+				writeable:true,
+				configurable:true
+			}) ;
+			cacheEntry.expires = Date.now()+1000*that.names[name].ttl.server ;
+		} else {
+			if (cache) {
+				sendPending(result) ;
+				delete cacheEntry.data;
+				delete cacheEntry.expires;
 			}
 		}
-		sendReturn({value:t,status:status});
+		sendReturn(result);
 	};
 	
+	/* Send an error result, invalidating the cache */
 	function errorCB(err,status) {
-		if (cache && key && cache[key]) {
-			delete cache[key];
-		}
 		DEBUG(status?29:20,err,status) ;
 		if (!(err instanceof Error))
 			err = new Error(err.toString()) ;
-		
-		sendReturn({value:{error:err.message,cause:err.stack} ,status:status || 500});
-	} ;
 
-	var fn = that.api[name].fn ;
-	if (fn[req.apiVersion])
-		fn = fn[req.apiVersion] ; 
-	
-	return fn.apply(context,args).then(returnCB,errorCB) ;
+		var result = {value:{error:err.message,cause:err.stack} ,status:status || 500} ;
+		if (cacheEntry) {
+			sendPending(result) ;
+			delete cacheEntry.data;
+			delete cacheEntry.expires;
+		}
+		
+		sendReturn(result);
+	} ;
 };
 
 ApiPublisher.prototype.cacheObject = function(obj) {
