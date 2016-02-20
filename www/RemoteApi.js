@@ -145,33 +145,34 @@ window.RemoteApi = (function(){
 				var now = Date.now() ;
 				Object.keys(api).forEach(function(i) {
 					if (api[i] && api[i].cache)
-						for (var k in api[i].cache)
-							if (((Date.now()-api[i].cache[k].t)/1000) >= api[i].ttl.t) 
-								delete api[i].cache[k] ;
+						api[i].cache.keys().forEach(function(k){
+                            if (((Date.now()-api[i].cache.get(k).t)/1000) >= api[i].ttl.t) 
+                                api[i].cache.remove(k) ;
+						}) ;
 				}) ;
 			},that.cacheSweepInterval || 60000) ;
 			
 			Object.keys(api).forEach(function(i) {
 				if (api[i] && api[i].parameters) {
 					if (!that.noLazyCache && api[i].ttl) {
-						api[i].cache = {} ;
+						api[i].cache = new that.Cache(i) ;
 						that[i] = function() {
 							var key = cacheKey(arguments,api[i].ttl.on) ;
-							if (api[i].cache[key] && (((Date.now()-api[i].cache[key].t)/1000) < api[i].ttl.t)) {
+							if (api[i].cache.get(key) && (((Date.now()-api[i].cache.get(key).t)/1000) < api[i].ttl.t)) {
 								return new Thenable(function(ok,error) {
 									that.log("Cache hit "+i) ;
-									return (ok || that.onSuccess)(api[i].cache[key].data) ;
+									return (ok || that.onSuccess)(api[i].cache.get(key).data) ;
 								}) ;
 							} 
 							var cb = callRemoteFuncBack(this,url,i,arguments) ;
 							return new Thenable(function(ok,err) {
 								return cb(function(d){
 									that.log("Cache miss "+i) ;
-									api[i].cache[key] = {t:Date.now(),data:d} ;
+									api[i].cache.set(key,{t:Date.now(),data:d}) ;
 									return ok && ok.apply(this,arguments)
 								},function(e){ 
 									that.log("Cache err "+i) ;
-									delete api[i].cache[key] ;
+									api[i].cache.remove(key) ;
 									return err && err.apply(this,arguments)
 								}) ;
 							}) ;
@@ -179,9 +180,12 @@ window.RemoteApi = (function(){
 						that[i].clearCache = function() {
 							if (arguments.length) {
 								var key = cacheKey(arguments,api[i].ttl.on) ;
-								delete api[i].cache[key] ;
+								api[i].cache.remove(key) ;
 							} else {
-								api[i].cache = {} ;
+		                        api[i].cache.keys().forEach(function(k){
+                                    api[i].cache.remove(k) ;
+		                        }) ;
+								api[i].cache = new that.Cache(i) ;
 							}
 						}
 					} else {
@@ -240,6 +244,53 @@ window.RemoteApi = (function(){
 		return this;
 	}
 
+	RemoteApi.StorageCache = function(storage){
+	    function StorageCache(name){
+            Object.defineProperty(this,"name",{value:'RemoteAPI:'+name,configurable:true,writeable:true}) ;
+            Object.defineProperty(this,"storage",{value:storage || window.localStorage}) ;
+    	    Object.assign(this,JSON.parse(this.storage[this.name]||"{}")) ;
+	    }
+	    StorageCache.prototype = {
+            setStorage:function(){
+                this.storage[this.name] = JSON.stringify(this) ;
+            },
+            set:function(k,v){
+                this[k] = v ;
+                this.setStorage() ;
+            },
+            get:function(k){
+                return this[k] ;
+            },
+            remove:function(k){
+                delete this[k] ;
+                if (!this.keys().length)
+                    this.storage.removeItem(this.name) ;
+                else
+                    this.setStorage() ;
+            },
+            keys:function(){
+                return Object.keys(this) ;
+            }
+        } ;
+	    return StorageCache ;
+	};
+
+	RemoteApi.ObjectCache = function(name){} ;
+    RemoteApi.ObjectCache.prototype = {
+            set:function(k,v){
+                this[k] = v ;
+            },
+            get:function(k){
+                return this[k] ;
+            },
+            remove:function(k){
+                delete this[k] ;
+            },
+            keys:function(){
+                return Object.keys(this) ;
+            }
+        } ;
+	
 	RemoteApi.prototype = {
 		onSuccess:function(result){},
 		onError:function(xhr){},
@@ -249,7 +300,8 @@ window.RemoteApi = (function(){
 		reviver:null,
 		serializer:null,
 		headers:null,
-		log:function() {}
+		log:function() {},
+		Cache:RemoteApi.ObjectCache
 	} ;
 
 	RemoteApi.load = function(url,options) {

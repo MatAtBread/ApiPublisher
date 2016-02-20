@@ -49,6 +49,8 @@ and:
 Changelog
 =========
 
+20Feb16: Generalize browser data response caching into the prototype RemoteApi.prototype.Cache to allow for other storage implementations that a simple JS object. Provide RemoteApi.StorageCache as an alternative that works with (for example) window.localStorage or window.sessionStorage.
+
 13May15: Allow ServerApi.load() to accept a Url object instead of a string url, to allow for additional options (such as the agent field) to be passed to Node's http module.
 
 19Feb15: NB: ApiPublisher v1.1.x has a breaking change. In order to be compatible with Express 4, and as part of optimizing nested APIs, you must now pass `api.handle` to `app.use()`, NOT just `api`. RemoteApi now automatically provisions nested APIs.
@@ -446,6 +448,17 @@ IMPORTANT: Don't use lazy caching for highly secure, important or personal data.
 	x = await api.findUser(arg1) ;	// Network trip - same argument (arg1), but values are different
 
 Lazy Caching is only supported by RemoteApi. ServerApi always makes the network round trip.
+
+The actual browser storage is determined by the RemoteApi.prototype.Cache value. The default value of this member is RemoteApi.ObjectCache, which simply stores data within a JS object. An alternative is provided which caches data in a WebAPI Storage object, such as window.localStorage or sessionStorage. To enable one of these caching strategies (or to define your own), include the following after the RemoteApi.js script is loaded, but before an API is loaded:
+
+	<script src="js/RemoteApi.js"></script>
+	<script>
+	// Use window.localStorage for cached values
+	RemoteApi.prototype.Cache = RemoteApi.StorageCache(window.localStorage) ;
+	// Load the api
+	RemoteApi.load('/data').then(function(api){
+		window.api = api ;
+	},console.error.bind(console)) ;
 
 Server-side caching
 ===================
