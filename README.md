@@ -319,7 +319,11 @@ For browser use, results can be cached (see Lazy Caching below). Every API has a
 	api.loginUser.clearCache() ;
 	result = await api.loginUser("mat","atbread") ;
 
-Note that all functions have a "clearCache" method, even if they are not cachable. In this case, the function does nothing.
+Note that all functions have a "clearCache" method, even if they are not cachable. In this case, the function does nothing. The return from clearCache() is the api function, so you can chain a clear and a remote call with:
+
+	api = await RemoteApi.load("/apiExposed") ;
+	result = await api.loginUser.clearCache()("mat","atbread") ;
+
 
 RemoteApi.load(url,options)
 ---------------------------

@@ -187,6 +187,7 @@ window.RemoteApi = (function(){
                                 }) ;
                                 api[i].cache = new that.Cache(url+"/"+i) ;
                             }
+                            return that[i].bind(that);
                         }
                     } else {
                         that[i] = function() {
