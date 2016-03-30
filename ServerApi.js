@@ -4,6 +4,7 @@
 var nodent = require('nodent')() ;
 var http = require('http') ;
 var URL = require('url') ;
+var Thenable = global.Promise || nodent.EagerThenable ;
 
 var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
 
@@ -16,7 +17,7 @@ function getOwnPropertyDescriptions(obj) {
 } ;
 
 function callRemoteFuncBack(that,path,args) {
-	return new nodent.Thenable(function(callback,error) {
+	return new Thenable(function(callback,error) {
 		if (!callback) callback = that.onSuccess.bind(that) ;
 		if (!error) error = that.onError.bind(that) ;
 
@@ -132,7 +133,7 @@ ServerApi.prototype.setHttpOptions = function(url) {
 }
 
 ServerApi.load = function(url) {
-	return new nodent.Thenable(function($return,$error) {
+	return new Thenable(function($return,$error) {
 		new ServerApi(url,function(ex){
 			if (ex) $error(ex) ;
 			else $return(this) ;

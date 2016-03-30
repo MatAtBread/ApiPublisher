@@ -1,6 +1,6 @@
 /* NPMs */
 var nodent = require('nodent')({log:function(){}}) ;
-global.Promise = nodent.Thenable ;
+global.Promise = global.Promise || nodent.EagerThenable ;
 var http = require('http') ;
 var connect = require('connect');
 var fs = require('fs');
@@ -39,4 +39,4 @@ console.log("Test server listening on http://localhost:1966/\n") ;
 // Call the API locally to show it's the same on client & server
 var log = console.log.bind(console) ;
 console.log("Calling the async API locally, just for show") ;
-testApi.delay(3000)(log,log) ;
+testApi.delay(3000).then(log,log) ;

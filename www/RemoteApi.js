@@ -1,10 +1,12 @@
 window.RemoteApi = (function(){
     function Nothing(){} ;
 
-    function Thenable(thenable) {
-        thenable.then = thenable ;
-        return thenable ;
-    };
+    var Thenable ;
+    try {
+        Thenable = Promise ;
+    } catch (ex) {
+        Thenable = (<@EagerThenable@>)() ;
+    }
     
     Object.defineProperty(Function.prototype,"$asyncbind",{
         value:<@$asyncbind@>,
@@ -222,7 +224,7 @@ window.RemoteApi = (function(){
             function loadAsync(api){
                 loadApi(url.remoteName,api);
             }
-            url()(loadAsync) ;
+            url().then(loadAsync) ;
         } else {
             var x = new XMLHttpRequest() ;
             x.open("GET", url+"/"+that.version, true);
