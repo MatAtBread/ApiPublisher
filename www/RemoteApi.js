@@ -1,16 +1,19 @@
 window.RemoteApi = (function(){
     function Nothing(){} ;
 
-    function Thenable(thenable) {
-        thenable.then = thenable ;
-        return thenable ;
-    };
-    
     Object.defineProperty(Function.prototype,"$asyncbind",{
         value:<@$asyncbind@>,
         writeable:true
     }) ;
 
+    var Thenable ;
+    try {
+        Thenable = Promise ;
+    } catch (ex) {
+        Nothing.$asyncbind(null,true) ;
+        Thenable = Nothing.$asyncbind.EagerThenable ;
+    }
+    
     function stringRepresentation(o) {
         try {
             return JSON.stringify(o) ;
@@ -166,7 +169,7 @@ window.RemoteApi = (function(){
                             } 
                             var cb = callRemoteFuncBack(this,url,i,arguments) ;
                             return new Thenable(function(ok,err) {
-                                return cb(function(d){
+                                return cb.then(function(d){
                                     that.log("Cache miss "+i) ;
                                     api[i].cache.set(key,{t:Date.now(),data:d}) ;
                                     return ok && ok.apply(this,arguments)
@@ -222,7 +225,7 @@ window.RemoteApi = (function(){
             function loadAsync(api){
                 loadApi(url.remoteName,api);
             }
-            url()(loadAsync) ;
+            url().then(loadAsync) ;
         } else {
             var x = new XMLHttpRequest() ;
             x.open("GET", url+"/"+that.version, true);

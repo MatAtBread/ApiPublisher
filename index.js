@@ -2,7 +2,7 @@
  * ApiPublisher - expose client and server interfaces to arbitrary
  * sets of async-functions (see https://www.npmjs.org/package/nodent)
  * with the general signature:
- * 		 function(....)(function(success){},function(error){}) ;
+ * 		 function(....).then(function(success){},function(error){}) ;
  *
  */
 
@@ -17,7 +17,8 @@ var remoteApiContent ;
 function sendRemoteApi(req,res,next) {
     res.writeHead(200, {'Content-Type': 'application/javascript; charset=utf-8'} );
     if (!remoteApiContent) {
-    	remoteApiContent = fs.readFileSync(remoteApiPath).toString().replace("<@$asyncbind@>",nodent.$asyncbind.toString()) ;
+    	remoteApiContent = fs.readFileSync(remoteApiPath).toString() ;
+    	remoteApiContent = remoteApiContent.split(/<@|@>/).map(function(f,i){ return i&1?nodent[f].toString():f}).join("") ;
     }
     res.end(remoteApiContent) ;
 }

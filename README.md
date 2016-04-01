@@ -49,6 +49,8 @@ and:
 Changelog
 =========
 
+01Apr16: Use nodent `EagerThenable` in preference to `Thenable` to ensure remote execution whether or not an `await` or `.then` is sought.
+
 20Feb16: Generalize browser data response caching into the prototype RemoteApi.prototype.Cache to allow for other storage implementations that a simple JS object. Provide RemoteApi.StorageCache as an alternative that works with (for example) window.localStorage or window.sessionStorage.
 
 13May15: Allow ServerApi.load() to accept a Url object instead of a string url, to allow for additional options (such as the agent field) to be passed to Node's http module.

@@ -11,8 +11,9 @@ window.$error = function(ex) {
 // Test using client-side JavaScript
 // Load the remote API
 RemoteApi.load("/testapi").then(function(api){
+    window.api = api ;
 // Once it's loaded, call the async-function "delay"	
-	api.delay(400)(function(result){
+	api.delay(400).then(function(result){
 // Display the result ;		
 		document.getElementById("flutter").innerText = "Flutter was "+result.flutter+" ms" ;
 	},$error) ;
