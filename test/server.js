@@ -1,6 +1,6 @@
 /* NPMs */
 var nodent = require('nodent')({log:function(){}}) ;
-global.Promise = global.Promise || nodent.EagerThenable ;
+global.Promise = global.Promise || nodent.EagerThenable() ;
 var http = require('http') ;
 var connect = require('connect');
 var fs = require('fs');

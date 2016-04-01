@@ -9,7 +9,7 @@
 var nodent = require('nodent')({dontInstallRequireHook:true}) ;
 var map = nodent.require('map') ;
 var DEBUG = global.DEBUG || (process.env.DEV ? function(l){ process.env.DEV<=l && console.log.apply(this,arguments); }:function(){}) ;
-var Thenable = global.Promise || nodent.EagerThenable ;
+var Thenable = global.Promise || nodent.EagerThenable() ;
 
 /**
  * Create an object representing functions that can be called remotely

@@ -16,7 +16,7 @@ function getOwnPropertyDescriptions(obj) {
 } ;
 
 function callRemoteFuncBack(that,path,args) {
-	return new Thenable(function(callback,error) {
+	return new (that.ThenableProvider)(function(callback,error) {
 		if (!callback) callback = that.onSuccess.bind(that) ;
 		if (!error) error = that.onError.bind(that) ;
 
