@@ -1,18 +1,19 @@
 window.RemoteApi = (function(){
     function Nothing(){} ;
 
-    var Thenable ;
-    try {
-        Thenable = Promise ;
-    } catch (ex) {
-        Thenable = (<@EagerThenable@>)() ;
-    }
-    
     Object.defineProperty(Function.prototype,"$asyncbind",{
         value:<@$asyncbind@>,
         writeable:true
     }) ;
 
+    var Thenable ;
+    try {
+        Thenable = Promise ;
+    } catch (ex) {
+        Nothing.$asyncbind(null,true) ;
+        Thenable = Nothing.$asyncbind.EagerThenable ;
+    }
+    
     function stringRepresentation(o) {
         try {
             return JSON.stringify(o) ;

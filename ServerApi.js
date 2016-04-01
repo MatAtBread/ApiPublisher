@@ -4,7 +4,6 @@
 var nodent = require('nodent')() ;
 var http = require('http') ;
 var URL = require('url') ;
-var Thenable = global.Promise || nodent.EagerThenable ;
 
 var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
 
@@ -132,7 +131,8 @@ ServerApi.prototype.setHttpOptions = function(url) {
 	}
 }
 
-ServerApi.load = function(url) {
+ServerApi.load = function(url,ThenableProvider) {
+    ThenableProvder = ThenableProvder || global.Promise || nodent.EagerThenable ;
 	return new Thenable(function($return,$error) {
 		new ServerApi(url,function(ex){
 			if (ex) $error(ex) ;

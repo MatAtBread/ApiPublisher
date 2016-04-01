@@ -2,7 +2,7 @@
  * ApiPublisher - expose client and server interfaces to arbitrary
  * sets of async-functions (see https://www.npmjs.org/package/nodent)
  * with the general signature:
- * 		 function(....)(function(success){},function(error){}) ;
+ * 		 function(....).then(function(success){},function(error){}) ;
  *
  */
 
