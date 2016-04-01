@@ -75,8 +75,10 @@ function constructApi(serverApi,baseUrl,that,api) {
 	}) ;
 }
 
-function ServerApi(url,onLoad) {
+function ServerApi(url,onLoad, ThenableProvider) {
 	var that = this ;
+	that.ThenableProvider = ThenableProvider ;
+	
 	if (!onLoad) onLoad = function(){};
 
 	var u = (typeof url==='string')?URL.parse(url):url ;
@@ -132,12 +134,12 @@ ServerApi.prototype.setHttpOptions = function(url) {
 }
 
 ServerApi.load = function(url,ThenableProvider) {
-    ThenableProvder = ThenableProvder || global.Promise || nodent.EagerThenable ;
-	return new Thenable(function($return,$error) {
+    ThenableProvider = ThenableProvider || global.Promise || nodent.EagerThenable() ;
+	return new ThenableProvider(function($return,$error) {
 		new ServerApi(url,function(ex){
 			if (ex) $error(ex) ;
 			else $return(this) ;
-		}) ;
+		},ThenableProvider) ;
 	});
 };
 

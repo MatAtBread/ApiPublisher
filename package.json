@@ -7,7 +7,7 @@
     "test": "open http://localhost:1966/ && node test/run-test-client-server.js"
   },
   "dependencies": {
-    "nodent": "file:///Users/matthewwoolf/git/nodent"
+    "nodent": "^2.5.0"
   },
   "devDependencies": {
     "connect": "2.x.x"

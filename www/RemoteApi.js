@@ -169,7 +169,7 @@ window.RemoteApi = (function(){
                             } 
                             var cb = callRemoteFuncBack(this,url,i,arguments) ;
                             return new Thenable(function(ok,err) {
-                                return cb(function(d){
+                                return cb.then(function(d){
                                     that.log("Cache miss "+i) ;
                                     api[i].cache.set(key,{t:Date.now(),data:d}) ;
                                     return ok && ok.apply(this,arguments)
