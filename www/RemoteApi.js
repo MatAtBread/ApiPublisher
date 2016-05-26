@@ -159,6 +159,7 @@ window.RemoteApi = (function(){
                 if (api[i] && api[i].parameters) {
                     if (!that.noLazyCache && api[i].ttl) {
                         api[i].cache = new that.Cache(url+"/"+i) ;
+                        api[i].initiated = {} ;
                         that[i] = function() {
                             var key = cacheKey(arguments,api[i].ttl.on) ;
                             if (api[i].cache.get(key) && (((Date.now()-api[i].cache.get(key).t)/1000) < api[i].ttl.t)) {
@@ -166,14 +167,20 @@ window.RemoteApi = (function(){
                                     that.log("Cache hit "+i) ;
                                     return (ok || that.onSuccess)(api[i].cache.get(key).data) ;
                                 }) ;
-                            } 
+                            }
+                            
+                            if (api[i].initiated[key])
+                                return api[i].initiated[key] ;
+                            
                             var cb = callRemoteFuncBack(this,url,i,arguments) ;
-                            return new Thenable(function(ok,err) {
+                            return api[i].initiated[key] = new Thenable(function(ok,err) {
                                 return cb.then(function(d){
+                                    delete api[i].initiated[key] ;
                                     that.log("Cache miss "+i) ;
                                     api[i].cache.set(key,{t:Date.now(),data:d}) ;
                                     return ok && ok.apply(this,arguments)
                                 },function(e){ 
+                                    delete api[i].initiated[key] ;
                                     that.log("Cache err "+i) ;
                                     api[i].cache.remove(key) ;
                                     return err && err.apply(this,arguments)
