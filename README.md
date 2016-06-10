@@ -285,13 +285,13 @@ RemoteApi options and prototype
 
 The RemoteApi scripts accepts the same prototype overrides as the ServerApi (above), and the following additional prototypes:
 
-prototype.apiStart(path,name,args,data)
+prototype.apiStart(path,name,args,xhr)
 ------------------------------------------------
 Called before every remote API call is sent over the network. Useful for debugging and providing UI feedback that a network operation is underway.
 
-prototype.apiEnd(path,name,args,data)
+prototype.apiEnd(path,name,args,resolve,data)
 ----------------------------------------------
-Called after every remote API call has responded, but before the callee is called-back. Useful for debugging and providing UI feedback that a network operation has finished.
+Called after every remote API call has responded, but before the callee is called-back. Useful for debugging and providing UI feedback that a network operation has finished. `resolve` is either true or false, and indicates whether `resolve` will be resolved or rejected.
 
 prototype.log(...)
 ----------------------------------------------

@@ -65,13 +65,13 @@ window.RemoteApi = (function(){
     function RemoteApi(url,options,onLoad) {
         function callRemoteFuncBack(that,path,name,args) {
             return new Thenable(function(callback,error) {
-                that.apiStart(path,name,args) ;
                 if (!callback) callback = that.onSuccess ;
                 if (!error) error = that.onError ;
                 var x = new XMLHttpRequest() ;
                 x.toString = function() {
                     return path+"/"+name+"/"+that.version+":"+x.status+" - "+new Date().toString() ;
                 };
+                that.apiStart(path,name,args,x) ;
                 x.open("POST", path+"/"+name+"/"+that.version, true);
                 x.setRequestHeader("Content-Type","application/json; charset=utf-8") ;
                 x.setRequestHeader("documentReferer", document.referrer);
@@ -86,28 +86,28 @@ window.RemoteApi = (function(){
                                 if (contentType=="application/json")
                                     data = !data?data:JSON.parse(data,that.reviver) ;
                             } catch (ex) {
-                                that.apiEnd(path,name,args,false) ;
+                                that.apiEnd(path,name,args,false,ex) ;
                                 return error(ex) ;
                             }
                             if (x.status==200) {
-                                that.apiEnd(path,name,args,true) ;
+                                that.apiEnd(path,name,args,true,data) ;
                                 return callback(data) ;
                             } else {
                                 var toString = data.toString.bind(data) ;
                                 data.toString = function() { return x.toString()+"\n"+toString() } ;
-                                that.apiEnd(path,name,args,false) ;
+                                that.apiEnd(path,name,args,false,data) ;
                                 return error(data) ;
                             }
                         } else {
                             if (x.status==0) { // No network
                                 var ex = new Error() ;
                                 ex.networkError = true ;
-                                that.apiEnd(path,name,args,false) ;
+                                that.apiEnd(path,name,args,false,ex) ;
                                 return error(ex) ;
                             } else {
                                 var ex = new Error() ;
                                 ex.toString = function() { return x.toString()+": Bad response\n\n"+x.responseText ; } ;
-                                that.apiEnd(path,name,args,false) ;
+                                that.apiEnd(path,name,args,false,ex) ;
                                 return error(ex) ;
                             }
                         }
@@ -305,8 +305,8 @@ window.RemoteApi = (function(){
     RemoteApi.prototype = {
         onSuccess:function(result){},
         onError:function(xhr){},
-        apiStart:function(path,name,args,data){},
-        apiEnd:function(path,name,args,data){},
+        apiStart:function(path,name,args,xhr){},
+        apiEnd:function(path,name,args,error,data){},
         version:"",
         reviver:null,
         serializer:null,
