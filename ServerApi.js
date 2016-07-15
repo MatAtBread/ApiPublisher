@@ -2,7 +2,6 @@
  * A Node-friendly way to initialise a remote API. cf: RemoteApi.js in the client
  */
 var nodent = require('nodent')() ;
-var http = require('http') ;
 var URL = require('url') ;
 
 var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
@@ -25,7 +24,7 @@ function callRemoteFuncBack(that,path,args) {
 		that.setHttpOptions(uriRequest) ;
 			
 		var tStart = Date.now() ;
-		var x = http.request(uriRequest, function(res){
+		var x = require(uriRequest.protocol.match(/(http|https):/)[1]).request(uriRequest, function(res){
 			res.setEncoding('utf8');
 			var body = "" ;
 			res.on('data', function (chunk) { body += chunk ; });
@@ -98,7 +97,7 @@ function ServerApi(url,onLoad, ThenableProvider) {
 		if (!(k in accessURL))
 			accessURL[k] = u[k] ;
 	}) ;
-	http.get(accessURL, function(res) {
+	require(u.protocol.match(/(http|https):/)[1]).get(accessURL, function(res) {
 		if (res.statusCode != 200) {
 			var ex = new Error("HTTP response "+res.statusCode+" "+url.toString()) ;
 			ex.errorObject = res ;
