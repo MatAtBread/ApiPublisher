@@ -167,7 +167,11 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 		args = req.body; 
 	else if (req.method=="GET") {
 		if (args[1]) {
-			args = JSON.parse(decodeURIComponent(args[1])) ;
+		    try {
+	            args = JSON.parse(decodeURIComponent(args[1])) ;
+		    } catch (ex) {
+		        return errorCB(new Error("Incorrect parameter format "+req.method+" "+ex.message),500) ;
+		    }
 		} else args = [] ;
 	} else {
 		return errorCB(new Error("Method not allowed: "+req.method),405) ;
