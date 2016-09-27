@@ -126,20 +126,22 @@ function stringRepresentation(o) {
 	}
 }
 
-function hash(o) {
-	if (o===undefined) return "undefined" ;
-	if (o===null) return "null" ;
-	if (typeof o==="object"){
-		var h = hash(stringRepresentation(o));
-		Object.keys(o).forEach(function(k) { h += hash(k)+hash(o[k])}) ;
-		return hash(h) ;
-	} else {
-		var h = 0;
-		var s = stringRepresentation(o) ;
+function hashCode(o) {
+    var h = 0;
+    if (o===undefined) return "undefined" ;
+    if (o===null) return "null" ;
+    if (o instanceof Object){
+        return hashCode(Object.keys(o).sort().map(function(k) { return hashCode(k)+hashCode(o[k]) }).join('|')) ;
+    } else {
+        var s = (typeof o)+o.toString() ;
         for (var i=0; i<s.length; i++)
             h = (((h << 5) - h) + s.charCodeAt(i)) & 0xFFFFFFFF;
-        return h.toString(36) ;
-	}
+        return h ;
+    }
+}
+
+function hash(o) {
+    return hashCode(o).toString(36) ;
 }
 
 /**
