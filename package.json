@@ -1,13 +1,13 @@
 {
   "name": "apipublisher",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Async JS API remoting",
   "main": "index.js",
   "scripts": {
     "test": "open http://localhost:1966/ && node test/run-test-client-server.js"
   },
   "dependencies": {
-    "nodent": ">2.6.6"
+    "nodent": ">=2.6.9"
   },
   "devDependencies": {
     "connect": "2.x.x"
