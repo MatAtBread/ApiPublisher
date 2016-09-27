@@ -172,7 +172,7 @@ window.RemoteApi = (function(){
                             if (api[i].initiated[key])
                                 return api[i].initiated[key] ;
                             
-                            var cb = callRemoteFuncBack(this,url,i,arguments) ;
+                            var cb = callRemoteFuncBack(that,url,i,arguments) ;
                             return api[i].initiated[key] = new Thenable(function(ok,err) {
                                 return cb.then(function(d){
                                     delete api[i].initiated[key] ;
@@ -202,7 +202,7 @@ window.RemoteApi = (function(){
                     } else {
                         that[i] = function() {
                             that.log("Call "+i) ;
-                            return callRemoteFuncBack(this,url,i,arguments) ; 
+                            return callRemoteFuncBack(that,url,i,arguments) ; 
                         }
                         that[i].clearCache = Nothing ;
                     }
