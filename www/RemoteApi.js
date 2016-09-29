@@ -1,6 +1,7 @@
 window.RemoteApi = (function(){
     function Nothing(){} ;
 
+    var memo = (<@afn$memo@>)() ;
     Object.defineProperty(Function.prototype,"$asyncbind",{
         value:<@$asyncbind@>,
         writeable:true
@@ -14,45 +15,23 @@ window.RemoteApi = (function(){
         Thenable = Nothing.$asyncbind.EagerThenable ;
     }
     
-    function stringRepresentation(o) {
-        try {
-            return JSON.stringify(o) ;
-        } catch (ex) {
-            return o.toString() ;
-        }
-    }
-    
-    function hash(o) {
-        if (o===undefined) return "undefined" ;
-        if (o===null) return "null" ;
-        if (typeof o==="object"){
-            var h = hash(stringRepresentation(o));
-            Object.keys(o).forEach(function(k) { h += hash(k)+hash(o[k])}) ;
-            return hash(h) ;
-        } else {
-            var h = 0;
-            var s = stringRepresentation(o) ;
-            for (var i=0; i<s.length; i++)
-                h = (((h << 5) - h) + s.charCodeAt(i)) & 0xFFFFFFFF;
-            return h.toString(36) ;
-        }
-    }
-    
-    function cacheKey(args,incl) {
+    function cacheKey(self,args,fn) {
+        var incl = fn.ttl.on ;
+        
         // Key on no args
         if (!incl || !incl.length)
             return "." ;
 
         // Key on all args
         if (incl=="*") {
-            return hash(Array.prototype.slice.call(args)) ;
+            return args ;
         }
         
         // Key onspecific args
         var src = [] ;
         for (var i=0; i<incl.length; i++)
             src.push(args[incl[i]]) ;
-        return hash(src) ;
+        return src ;
     }
     
     function setHeaders(x,headers) {
@@ -144,66 +123,15 @@ window.RemoteApi = (function(){
             onLoad = function(){} ;
 
         function loadApi(url,api){
-            setInterval(function(){
-                var now = Date.now() ;
-                Object.keys(api).forEach(function(i) {
-                    if (api[i] && api[i].cache)
-                        api[i].cache.keys().forEach(function(k){
-                            if (((Date.now()-api[i].cache.get(k).t)/1000) >= api[i].ttl.t) 
-                                api[i].cache.remove(k) ;
-                        }) ;
-                }) ;
-            },that.cacheSweepInterval || 60000) ;
-            
             Object.keys(api).forEach(function(i) {
                 if (api[i] && api[i].parameters) {
-                    if (!that.noLazyCache && api[i].ttl) {
-                        api[i].cache = new that.Cache(url+"/"+i) ;
-                        api[i].initiated = {} ;
-                        that[i] = function() {
-                            var key = cacheKey(arguments,api[i].ttl.on) ;
-                            if (api[i].cache.get(key) && (((Date.now()-api[i].cache.get(key).t)/1000) < api[i].ttl.t)) {
-                                return new Thenable(function(ok,error) {
-                                    that.log("Cache hit "+i) ;
-                                    return (ok || that.onSuccess)(api[i].cache.get(key).data) ;
-                                }) ;
-                            }
-                            
-                            if (api[i].initiated[key])
-                                return api[i].initiated[key] ;
-                            
-                            var cb = callRemoteFuncBack(that,url,i,arguments) ;
-                            return api[i].initiated[key] = new Thenable(function(ok,err) {
-                                return cb.then(function(d){
-                                    delete api[i].initiated[key] ;
-                                    that.log("Cache miss "+i) ;
-                                    api[i].cache.set(key,{t:Date.now(),data:d}) ;
-                                    return ok && ok.apply(this,arguments)
-                                },function(e){ 
-                                    delete api[i].initiated[key] ;
-                                    that.log("Cache err "+i) ;
-                                    api[i].cache.remove(key) ;
-                                    return err && err.apply(this,arguments)
-                                }) ;
-                            }) ;
-                        }
-                        that[i].clearCache = function() {
-                            if (arguments.length) {
-                                var key = cacheKey(arguments,api[i].ttl.on) ;
-                                api[i].cache.remove(key) ;
-                            } else {
-                                api[i].cache.keys().forEach(function(k){
-                                    api[i].cache.remove(k) ;
-                                }) ;
-                                api[i].cache = new that.Cache(url+"/"+i) ;
-                            }
-                            return that[i].bind(that);
-                        }
+                    that[i] = function() {
+                        return callRemoteFuncBack(that,url,i,arguments) ; 
+                    }
+                    if (api[i].ttl) {
+                        that[i].ttl = api[i].ttl ;
+                        that[i] = memo(that[i],{ttl:api[i].ttl.t*1000, key: cacheKey, createCache:function(){ return new that.Cache(url+"/"+i) }}) ;
                     } else {
-                        that[i] = function() {
-                            that.log("Call "+i) ;
-                            return callRemoteFuncBack(that,url,i,arguments) ; 
-                        }
                         that[i].clearCache = Nothing ;
                     }
                     that[i].parameters = api[i].parameters ;
@@ -255,7 +183,7 @@ window.RemoteApi = (function(){
         return this;
     }
 
-    RemoteApi.StorageCache = function(storage){
+    RemoteApi.StorageCache = function LocalStorageCache(storage){
         function StorageCache(name){
             Object.defineProperty(this,"name",{value:'RemoteAPI:'+name,configurable:true,writeable:true}) ;
             Object.defineProperty(this,"storage",{value:storage || window.localStorage}) ;
@@ -263,7 +191,12 @@ window.RemoteApi = (function(){
         }
         StorageCache.prototype = {
             setStorage:function(){
-                this.storage[this.name] = JSON.stringify(this) ;
+                try {
+                    this.storage[this.name] = JSON.stringify(this) ;
+                } catch (ex) {
+                    console.warn("Can't cache API data. Removing old data from localStorage",ex) ;
+                    this.storage.removeItem(this.name) ;
+                }
             },
             set:function(k,v){
                 this[k] = v ;
@@ -272,7 +205,10 @@ window.RemoteApi = (function(){
             get:function(k){
                 return this[k] ;
             },
-            remove:function(k){
+            remove:function(k){ // Deprecated in favour of delete(), like a Map
+                this.delete(k) ; 
+            },
+            delete:function(k){
                 delete this[k] ;
                 if (!this.keys().length)
                     this.storage.removeItem(this.name) ;
@@ -286,21 +222,26 @@ window.RemoteApi = (function(){
         return StorageCache ;
     };
 
-    RemoteApi.ObjectCache = function(name){} ;
+    RemoteApi.ObjectCache = function ObjectCache(name){
+        this.store = Object.create(null) ;
+    } ;
     RemoteApi.ObjectCache.prototype = {
-            set:function(k,v){
-                this[k] = v ;
-            },
-            get:function(k){
-                return this[k] ;
-            },
-            remove:function(k){
-                delete this[k] ;
-            },
-            keys:function(){
-                return Object.keys(this) ;
-            }
-        } ;
+        set:function(k,v){
+            this.store[k] = v ;
+        },
+        get:function(k){
+            return this.store[k] ;
+        },
+        remove:function(k){ // Deprecated in favour of delete(), like a Map
+            this.store.delete(k) ; 
+        },
+        keys:function(){
+            return Object.keys(this.store) ;
+        },
+        delete:function(k){
+            delete this.store[k] ;
+        }
+    } ;
     
     RemoteApi.prototype = {
         onSuccess:function(result){},

@@ -46,5 +46,5 @@ var api = {
 //Example of APIs that resolves WITHOUT a round-trip on the client 
 api.client.clientInstance = ["Matt"] ;
 api.always.clientInstance = [] ;
-
+api.delay.ttl = { server:5000 } ;
 module.exports = api ;

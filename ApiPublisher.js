@@ -9,6 +9,7 @@
 var nodent = require('nodent')({dontInstallRequireHook:true}) ;
 var map = nodent.require('map') ;
 var Thenable = global.Promise || nodent.EagerThenable() ;
+var afn = require('afn')();
 
 /**
  * Create an object representing functions that can be called remotely
@@ -19,37 +20,29 @@ function ApiPublisher(obj) {
     var that = this ;
     that.api = {} ;
     that.names = {} ;
-    that.cache = {} ;
     that.nested = {} ;
     that.context = obj ;
 
     for (var i in obj) if (obj.hasOwnProperty(i)){
         if (typeof obj[i] == 'function') {
-            that.api[i] = {fn:obj[i]} ;
-            that.names[i] = { parameters: obj[i].length } ; // Remote call info 
+            var fn = obj[i] ;
+            that.names[i] = { parameters: fn.length } ; // Remote call info 
+            if (fn.ttl && !fn.clientInstance) {
+                that.names[i].ttl = fn.ttl ; // Remote call info
+                fn = afn.memo(fn, {ttl: fn.ttl.server*1000, key: fn.ttl.serverKey}) ;
+                fn.ttl = that.names[i].ttl ;
+                if (fn.ttl.memoize)
+                    obj[i] = fn ;
+            }
+            
+            that.api[i] = {fn:fn} ;
 			try {
-				that.names[i].parameters = obj[i].toString().match(/[^(]*(\(.*\))/)[1] ;
+				that.names[i].parameters = fn.toString().match(/[^(]*(\(.*\))/)[1] ;
 			} catch (ex) {
 				// Unknown number of parameters
 			}
-            
-            if (obj[i].ttl)
-                that.names[i].ttl = obj[i].ttl ; // Remote call info 
         }
     }
-
-    setInterval(function(){
-        var now = Date.now() ;
-        Object.keys(that.cache).forEach(function(k){
-            var j = Object.keys(that.cache[k]) ;
-            if (!j.length)
-                delete that.cache[k] ;
-            else j.forEach(function(e){
-                if (that.cache[k][e].expires < now)
-                    delete that.cache[k][e] ;
-            }) ;
-        }) ;
-    },65536) ;
 
     that.handle = ApiPublisher.prototype.handle.bind(this) ;
     return that ;
@@ -157,7 +150,7 @@ ApiPublisher.prototype.sendReturn = function(req,rsp,result,status) {
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
     var tStart = Date.now() ;
     var args = name.split("?") ;
-    var fn, cacheEntry, key ;
+    var fn, key ;
 
     name = args[0] ;
     if (!this.api[name]) {
@@ -187,32 +180,6 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
     // info etc.
     var context = this.proxyContext(name,req,rsp,args) ;
 
-    // Is this result cachable on the server?
-    if (this.names[name].ttl && this.names[name].ttl.server) {
-        key = hash(this.cacheObject(context)) ;
-        if (key) {
-            this.cache[name] = this.cache[name] || {} ;
-            cacheEntry = this.cache[name][key] ;
-            if (cacheEntry) {
-                if (cacheEntry.expires) {
-                    if (cacheEntry.expires > Date.now()) {
-                        return sendReturn({value:cacheEntry.data});
-                    }
-                    delete cacheEntry.expires ;
-                    delete cacheEntry.data ;
-                }
-
-                if (cacheEntry.pending) {
-                    // Another call is pending, and will return the data/error on completion
-                    return cacheEntry.pending.push(sendReturn) ;
-                }
-            } else {
-                cacheEntry = this.cache[name][key] = {} ;
-            }
-            cacheEntry.pending = cacheEntry.pending || [] ;
-        }
-    }
-
     fn = this.api[name].fn ;
     if (fn[req.apiVersion])
         fn = fn[req.apiVersion] ; 
@@ -229,15 +196,6 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
         }
     } ;
 
-    /* Send the result to any pending clients that are listening */
-    function sendPending(result) {
-        var pending = cacheEntry.pending ;
-        delete cacheEntry.pending ;
-        pending && pending.forEach(function(returner,idx){
-            returner(result) ;
-        }) ;
-    }
-
     /* Send a successful result, updating the cache if required */
     function returnCB(t,status) {
         if (nodent.isThenable(t)) {
@@ -250,22 +208,6 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
                 t.sendRemoteApi(req,rsp) ;
                 return ;
             }
-            if (cacheEntry) {
-                sendPending(result) ;
-                Object.defineProperty(cacheEntry,'data',{
-                    value:t,
-                    enumerable:false,
-                    writeable:true,
-                    configurable:true
-                }) ;
-                cacheEntry.expires = Date.now()+1000*that.names[name].ttl.server ;
-            }
-        } else {
-            if (cacheEntry) {
-                sendPending(result) ;
-                delete cacheEntry.data;
-                delete cacheEntry.expires;
-            }
         }
         sendReturn(result);
     };
@@ -276,11 +218,6 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
             err = new Error(err.toString()) ;
 
         var result = {value:{error:err.message,cause:err.stack} ,status:status || 500} ;
-        if (cacheEntry) {
-            sendPending(result) ;
-            delete cacheEntry.data;
-            delete cacheEntry.expires;
-        }
 
         sendReturn(result);
     } ;
