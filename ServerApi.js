@@ -4,8 +4,6 @@
 var nodent = require('nodent')() ;
 var URL = require('url') ;
 
-var DEBUG = global.DEBUG || (process.env.DEV ? function(){ console.log.apply(this,arguments); }:function(){}) ;
-
 function getOwnPropertyDescriptions(obj) {
 	var d = {};
 	Object.keys(obj).forEach(function(k){
@@ -32,13 +30,11 @@ function callRemoteFuncBack(that,path,args) {
 				var contentType = res.headers['content-type'] ;
 				if (contentType) contentType = contentType.split(";")[0] ; 
 				if (res.statusCode==200) {
-					DEBUG(1,path,args,res.statusCode,(Date.now()-tStart)+"ms") ;
 					var data = body ;
 					if (contentType=="application/json")
 						data = !data?data:JSON.parse(data,that.reviver) ;
 					callback(data) ;
 				} else {
-					DEBUG(25,path,args,res.statusCode,(Date.now()-tStart)+"ms\n"+body) ;
 					if (contentType=="application/json") {
 						var exception = JSON.parse(body,that.reviver) ;
 						var exc = new Error(body) ;
