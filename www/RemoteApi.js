@@ -199,36 +199,37 @@ window.RemoteApi = (function(){
         function StorageCache(name){
             Object.defineProperty(this,"name",{value:'RemoteAPI:'+name,configurable:true,writeable:true}) ;
             Object.defineProperty(this,"storage",{value:storage || window.localStorage}) ;
-            Object.assign(this,JSON.parse(this.storage[this.name]||"{}")) ;
+            this.store = Object.create(null) ;
+            Object.assign(this.store,JSON.parse(this.storage[this.name]||"{}")) ;
         }
         StorageCache.prototype = {
             setStorage:function(){
                 try {
-                    this.storage[this.name] = JSON.stringify(this) ;
+                    this.storage[this.name] = JSON.stringify(this.store) ;
                 } catch (ex) {
                     console.warn("Can't cache API data. Removing old data from localStorage",ex) ;
                     this.storage.removeItem(this.name) ;
                 }
             },
             set:function(k,v){
-                this[k] = v ;
+                this.store[k] = v ;
                 this.setStorage() ;
             },
             get:function(k){
-                return this[k] ;
+                return this.store[k] ;
             },
             remove:function(k){ // Deprecated in favour of delete(), like a Map
                 this.delete(k) ; 
             },
             delete:function(k){
-                delete this[k] ;
+                delete this.store[k] ;
                 if (!this.keys().length)
                     this.storage.removeItem(this.name) ;
                 else
                     this.setStorage() ;
             },
             keys:function(){
-                return Object.keys(this) ;
+                return Object.keys(this.store) ;
             }
         } ;
         return StorageCache ;
