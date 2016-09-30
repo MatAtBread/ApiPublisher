@@ -14,7 +14,7 @@ server.on('close', function (code) {
 	console.log('Server process exited with code ' + code);
 });
 
-/* Wait a seconds and start the client */
+/* Wait a few seconds and start the client */
 function testServer() {
 	var ServerApi = require("../index").ServerApi ;
 	
@@ -22,6 +22,8 @@ function testServer() {
 	ServerApi.load("http://localhost:1966/testapi").then(function(api){
 		api.delay(200).then(function(result){
 			console.log("Client",JSON.stringify(result)) ;
+		},function(result){
+            console.log("Client(error)",JSON.stringify(result)) ;
 		})
 	}) ;
 	

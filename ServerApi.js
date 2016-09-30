@@ -37,9 +37,8 @@ function callRemoteFuncBack(that,path,args) {
 				} else {
 					if (contentType=="application/json") {
 						var exception = JSON.parse(body,that.reviver) ;
-						var exc = new Error(body) ;
+						var exc = new Error(exception.message || exception.error || exception.toString()) ;
 						Object.defineProperties(exc, getOwnPropertyDescriptions(exception)) ;
-						exc.constructor = Error ;
 						error(exc) ;
 					} else {
 						error(new Error(body)) ;

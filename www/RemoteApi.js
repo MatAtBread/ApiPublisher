@@ -1,5 +1,10 @@
 window.RemoteApi = (function(){
     function Nothing(){} ;
+    function ApiError(x) {
+        Error.apply(this,arguments) ;
+        this.message = x.toString() ;
+    }
+    ApiError.prototype = new Error() ;
 
     var memo = (<@afn$memo@>)() ;
     Object.defineProperty(Function.prototype,"$asyncbind",{
@@ -16,6 +21,9 @@ window.RemoteApi = (function(){
     }
     
     function cacheKey(self,args,fn) {
+        if (!fn.ttl.t) // Not cachable on the client
+            return undefined ;
+        
         var incl = fn.ttl.on ;
         
         // Key on no args
@@ -65,6 +73,7 @@ window.RemoteApi = (function(){
                                 if (contentType=="application/json")
                                     data = !data?data:JSON.parse(data,that.reviver) ;
                             } catch (ex) {
+                                ex.cause = {path:path,name:name,args:args} ;
                                 that.apiEnd(path,name,args,false,ex) ;
                                 return error(ex) ;
                             }
@@ -72,20 +81,23 @@ window.RemoteApi = (function(){
                                 that.apiEnd(path,name,args,true,data) ;
                                 return callback(data) ;
                             } else {
-                                var toString = data.toString.bind(data) ;
-                                data.toString = function() { return x.toString()+"\n"+toString() } ;
+                                var ex = new ApiError(data.message || data.error || data.cause || x.status) ;
+                                ex.httpResponse = {status:x.status, response: x.responseText} ;
+                                ex.cause = {path:path,name:name,args:args} ;
                                 that.apiEnd(path,name,args,false,data) ;
-                                return error(data) ;
+                                return error(ex) ;
                             }
                         } else {
                             if (x.status==0) { // No network
-                                var ex = new Error() ;
+                                var ex = new ApiError("No network") ;
                                 ex.networkError = true ;
+                                ex.cause = {path:path,name:name,args:args} ;
                                 that.apiEnd(path,name,args,false,ex) ;
                                 return error(ex) ;
                             } else {
-                                var ex = new Error() ;
-                                ex.toString = function() { return x.toString()+": Bad response\n\n"+x.responseText ; } ;
+                                var ex = new ApiError(x.responseText || x.status) ;
+                                ex.httpResponse = {status:x.status, response: x.responseText} ;
+                                ex.cause = {path:path,name:name,args:args} ;
                                 that.apiEnd(path,name,args,false,ex) ;
                                 return error(ex) ;
                             }
@@ -233,7 +245,7 @@ window.RemoteApi = (function(){
             return this.store[k] ;
         },
         remove:function(k){ // Deprecated in favour of delete(), like a Map
-            this.store.delete(k) ; 
+            this.delete(k) ; 
         },
         keys:function(){
             return Object.keys(this.store) ;
@@ -253,7 +265,14 @@ window.RemoteApi = (function(){
         serializer:null,
         headers:null,
         log:function() {},
-        Cache:RemoteApi.ObjectCache
+        Cache:RemoteApi.ObjectCache,
+        clearCache:function(){
+            var that = this ;
+            Object.keys(that).forEach(function(k){
+                if (typeof that[k].clearCache === "function")
+                    that[k].clearCache() ;
+            }) ;
+        }
     } ;
 
     RemoteApi.load = function(url,options) {
@@ -265,5 +284,6 @@ window.RemoteApi = (function(){
         });
     };
 
+    RemoteApi.ApiError = ApiError ;
     return RemoteApi ;
 })() ;

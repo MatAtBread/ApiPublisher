@@ -113,32 +113,6 @@ ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
     }) ;
 };
 
-function stringRepresentation(o) {
-    try {
-        return JSON.stringify(o)+o.toString() ;
-    } catch (ex) {
-        return o.toString() ;
-    }
-}
-
-function hashCode(o) {
-    var h = 0;
-    if (o===undefined) return "undefined" ;
-    if (o===null) return "null" ;
-    if (o instanceof Object){
-        return hashCode(Object.keys(o).sort().map(function(k) { return hashCode(k)+hashCode(o[k]) }).join('|')) ;
-    } else {
-        var s = (typeof o)+o.toString() ;
-        for (var i=0; i<s.length; i++)
-            h = (((h << 5) - h) + s.charCodeAt(i)) & 0xFFFFFFFF;
-        return h ;
-    }
-}
-
-function hash(o) {
-    return hashCode(o).toString(36) ;
-}
-
 /**
  * Remote invocation of a local async funcback API. 
  **/
@@ -215,7 +189,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
     /* Send an error result, invalidating the cache */
     function errorCB(err,status) {
         if (!(err instanceof Error))
-            err = new Error(err.toString()) ;
+            err = new Error(err.message || err.toString()) ;
 
         var result = {value:{error:err.message,cause:err.stack} ,status:status || 500} ;
 
@@ -225,6 +199,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
     return fn.apply(context,args).then(returnCB,errorCB) ;
 };
 
+// Deprecated - this is no longer called internally
 ApiPublisher.prototype.cacheObject = function(obj) {
     return {args:obj.arguments,version:obj.request.apiVersion} ;
 };

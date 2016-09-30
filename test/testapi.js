@@ -27,6 +27,9 @@ var nested = new ApiPublisher({
 
 var api = {
 	delay:async function(period) {
+	    if (period <= 0) {
+	        throw new Error("This is not a time machine") ;
+	    }
 		period = period || 1000 ;
 		var result = {started:Date.now()} ;
 		await after(period) ;
