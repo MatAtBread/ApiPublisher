@@ -207,8 +207,10 @@ window.RemoteApi = (function(){
                 try {
                     this.storage[this.name] = JSON.stringify(this.store) ;
                 } catch (ex) {
-                    console.warn("Can't cache API data. Removing old data from localStorage",ex) ;
-                    this.storage.removeItem(this.name) ;
+                    var s = this.storage ;
+                    var dataByLength = Object.keys(s).sort(function(a,b){ return s[b].length-s[a].length}) ;
+                    console.warn("Can't cache API data. Removed old data (",dataByLength[0],s[dataByLength[0]].length,"bytes)",ex) ;
+                    s.removeItem(dataByLength[0]) ;
                 }
             },
             set:function(k,v){
