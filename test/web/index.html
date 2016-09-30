@@ -5,7 +5,7 @@
 //Nodent on the client requires at "top-level" error handler
 //called $error()
 window.$error = function(ex) {
-	console.error(ex) ;
+	alert(JSON.stringify(ex,null,2)) ;
 }
 
 // Test using client-side JavaScript
@@ -26,5 +26,6 @@ RemoteApi.load("/testapi").then(function(api){
 Testing...
 </div>
 <button id="test">Test again</button>
+<button id="oops">Test errors</button>
 </body>
 </html>

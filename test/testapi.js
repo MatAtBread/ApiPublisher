@@ -27,6 +27,9 @@ var nested = new ApiPublisher({
 
 var api = {
 	delay:async function(period) {
+	    if (period <= 0) {
+	        throw new Error("This is not a time machine") ;
+	    }
 		period = period || 1000 ;
 		var result = {started:Date.now()} ;
 		await after(period) ;
@@ -46,5 +49,5 @@ var api = {
 //Example of APIs that resolves WITHOUT a round-trip on the client 
 api.client.clientInstance = ["Matt"] ;
 api.always.clientInstance = [] ;
-
+api.delay.ttl = { server:5000 } ;
 module.exports = api ;

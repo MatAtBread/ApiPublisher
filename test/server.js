@@ -40,3 +40,5 @@ console.log("Test server listening on http://localhost:1966/\n") ;
 var log = console.log.bind(console) ;
 console.log("Calling the async API locally, just for show") ;
 testApi.delay(3000).then(log,log) ;
+testApi.delay(3000).then(log,log) ;
+testApi.delay(3000).then(log,log) ;
