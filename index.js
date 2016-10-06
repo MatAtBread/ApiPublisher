@@ -17,7 +17,7 @@ var remoteApiContent ;
 var bundledFunctions = {
     $asyncbind:nodent.$asyncbind,
     $asyncspawn:nodent.$asyncspawn,
-    afn$memo:require('afn/memo')
+    afn$memo:require('afn/dist/memo')
 };
 
 function sendRemoteApi(req,res,next) {

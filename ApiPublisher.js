@@ -9,14 +9,16 @@
 var nodent = require('nodent')({dontInstallRequireHook:true}) ;
 var map = nodent.require('map') ;
 var Thenable = global.Promise || nodent.EagerThenable() ;
-var afn = require('afn')();
 
 /**
  * Create an object representing functions that can be called remotely
  *  
  * @param obj	- the object containing the functions to make available remotely
  */
-function ApiPublisher(obj) {
+function ApiPublisher(obj,options) {
+    options = options || {} ;
+    
+    var afn = require('afn')(options);
     var that = this ;
     that.api = {} ;
     that.names = {} ;

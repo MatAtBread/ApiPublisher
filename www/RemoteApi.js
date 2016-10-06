@@ -142,7 +142,7 @@ window.RemoteApi = (function(){
                     }
                     if (api[i].ttl) {
                         that[i].ttl = api[i].ttl ;
-                        that[i] = memo(that[i],{ttl:api[i].ttl.t*1000, key: cacheKey, createCache:function(){ return new that.Cache(url+"/"+i) }}) ;
+                        that[i] = memo(that[i],{ttl:api[i].ttl.t*1000, key: cacheKey, createCache:function(cacheID){ return new that.Cache(url+"/"+i) }}) ;
                     } else {
                         that[i].clearCache = Nothing ;
                     }
@@ -223,7 +223,7 @@ window.RemoteApi = (function(){
             remove:function(k){ // Deprecated in favour of delete(), like a Map
                 this.delete(k) ; 
             },
-            delete:function(k){
+            'delete':function(k){
                 delete this.store[k] ;
                 if (!this.keys().length)
                     this.storage.removeItem(this.name) ;
@@ -253,8 +253,11 @@ window.RemoteApi = (function(){
         keys:function(){
             return Object.keys(this.store) ;
         },
-        delete:function(k){
+        'delete':function(k){
             delete this.store[k] ;
+        },
+        clear:function(){
+            this.store = Object.create(null) ;
         }
     } ;
     

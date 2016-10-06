@@ -20,6 +20,7 @@ async function after(n) {
 
 var nested = new ApiPublisher({
 	hello:async function() {
+	    console.log("Remote client called 'nested.hello()'") ;
 		return "I am nested" ;
 	}
 });
@@ -27,6 +28,7 @@ var nested = new ApiPublisher({
 
 var api = {
 	delay:async function(period) {
+        console.log("Remote client called 'delay("+period+")'") ;
 	    if (period <= 0) {
 	        throw new Error("This is not a time machine") ;
 	    }
@@ -38,6 +40,7 @@ var api = {
 		return result ;
 	},
 	client:async function(username) {
+        console.log("Remote client called 'client("+username+")'") ;
 		return username+" - don't waste bandwidth!" ;
 	},
 	// An example of a nested API
@@ -49,5 +52,5 @@ var api = {
 //Example of APIs that resolves WITHOUT a round-trip on the client 
 api.client.clientInstance = ["Matt"] ;
 api.always.clientInstance = [] ;
-api.delay.ttl = { server:5000 } ;
+api.delay.ttl = { t:1, on:".", server:2 } ;
 module.exports = api ;
