@@ -127,6 +127,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
     var tStart = Date.now() ;
     var args = name.split("?") ;
     var fn, key ;
+    var that = this ;
 
     name = args[0] ;
     if (!this.api[name]) {
@@ -159,8 +160,6 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
     fn = this.api[name].fn ;
     if (fn[req.apiVersion])
         fn = fn[req.apiVersion] ; 
-
-    var that = this ;
 
     /* Send the response to the client */
     function sendReturn(result){
