@@ -155,7 +155,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 
     // Proto-augment "this" with the current request so the remoted API can query session
     // info etc.
-    var context = this.proxyContext(name,req,rsp,args) ;
+    var promise, context = this.proxyContext(name,req,rsp,args) ;
 
     fn = this.api[name].fn ;
     if (fn[req.apiVersion])
@@ -164,6 +164,10 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
     /* Send the response to the client */
     function sendReturn(result){
         if (!rsp.headersSent) {
+            if (promise && promise.origin) {
+                rsp.setHeader("X-Cache-Origin",JSON.stringify(promise.origin)) ;
+            }
+
             for (var i in stdHeaders)
                 rsp.setHeader(i,stdHeaders[i]) ;
             rsp.statusCode = result.status || 200 ;
@@ -197,7 +201,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
         sendReturn(result);
     } ;
     
-    return fn.apply(context,args).then(returnCB,errorCB) ;
+    (promise = fn.apply(context,args)).then(returnCB,errorCB) ;
 };
 
 // Deprecated - this is no longer called internally

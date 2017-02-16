@@ -6,7 +6,7 @@ window.RemoteApi = (function(){
     }
     ApiError.prototype = new Error() ;
 
-    var memo = (<@afn$memo@>)() ;
+    var memo = (<@afn$memo@>)({ origin:true }) ;
     Object.defineProperty(Function.prototype,"$asyncbind",{
         value:<@$asyncbind@>,
         writeable:true
@@ -232,7 +232,8 @@ window.RemoteApi = (function(){
             },
             keys:function(){
                 return Object.keys(this.store) ;
-            }
+            },
+            name:'RemoteApi.StorageCache'
         } ;
         return StorageCache ;
     };
@@ -258,7 +259,8 @@ window.RemoteApi = (function(){
         },
         clear:function(){
             this.store = Object.create(null) ;
-        }
+        },
+        name:'RemoteApi.ObjectCache'
     } ;
     
     RemoteApi.prototype = {
