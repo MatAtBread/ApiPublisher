@@ -163,13 +163,21 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 
     /* Send the response to the client */
     function sendReturn(result){
+        var headers = stdHeaders ;
         if (!rsp.headersSent) {
             if (promise && promise.origin) {
                 rsp.setHeader("X-Cache-Origin",JSON.stringify(promise.origin)) ;
+                if (promise.origin.expires) {
+                    headers = {
+                        'Content-Type': stdHeaders['Content-Type'],
+                        'Expires': new Date(promise.origin.expires).toUTCString()
+                    } ;
+                }
             }
 
-            for (var i in stdHeaders)
-                rsp.setHeader(i,stdHeaders[i]) ;
+            for (var i in headers)
+                rsp.setHeader(i,headers[i]) ;
+            
             rsp.statusCode = result.status || 200 ;
             that.sendReturn(req,rsp,result.value,result.status) ;
         }
