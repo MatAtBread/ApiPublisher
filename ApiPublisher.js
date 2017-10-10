@@ -31,7 +31,11 @@ function ApiPublisher(obj,options) {
             that.names[i] = { parameters: fn.length } ; // Remote call info 
             if (fn.ttl && !fn.clientInstance) {
                 that.names[i].ttl = fn.ttl ; // Remote call info
-                fn = afn.memo(fn, {ttl: typeof fn.ttl.server==="number" ? fn.ttl.server*1000:fn.ttl.server, key: fn.ttl.serverKey}) ;
+                fn = afn.memo(fn, {
+                    ttl: typeof fn.ttl.server==="number" ? fn.ttl.server*1000:fn.ttl.server, 
+                    key: fn.ttl.serverKey,
+                    mru: fn.ttl.mru
+                }) ;
                 fn.ttl = that.names[i].ttl ;
                 if (fn.ttl.memoize)
                     obj[i] = fn ;
