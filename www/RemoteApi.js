@@ -58,8 +58,8 @@ window.RemoteApi = (function(){
                 x.toString = function() {
                     return path+"/"+name+"/"+that.version+":"+x.status+" - "+new Date().toString() ;
                 };
-                that.apiStart(path,name,args,x) ;
                 x.open("POST", path+"/"+name+"/"+that.version, true);
+                that.apiStart(path,name,args,x) ;
                 x.setRequestHeader("Content-Type","application/json; charset=utf-8") ;
                 x.setRequestHeader("documentReferer", document.referrer);
                 setHeaders(x,that.headers) ;
