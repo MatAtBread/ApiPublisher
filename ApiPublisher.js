@@ -86,7 +86,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
                 if (fn.length != fn.clientInstance.length)
                     self.warn("Remote instance function arguments not the same as declaration:",e) ;
 
-                return fn.apply({request:req},fn.clientInstance).then(function(instanceData){
+                return fn.apply(self.proxyContext(null,req,null,null),fn.clientInstance).then(function(instanceData){
                     if (instanceData instanceof ApiPublisher) {
                         self.nested[e] = instanceData ;
                         instanceData.getRemoteApi(req, e, function(api){
@@ -268,7 +268,7 @@ ApiPublisher.prototype.handle = function(req,rsp,next) {
                 self.api[e].fn.clientInstance && 
                 self.api[e].fn.clientInstance.length===0) {
 
-                return self.api[e].fn.apply({request:req}).then(function(instanceData){
+                return self.api[e].fn.apply(self.proxyContext(null,req,rsp,null)).then(function(instanceData){
                     if (instanceData instanceof ApiPublisher) {
                         self.nested[e] = instanceData ;
                         path.unshift(e) ;
