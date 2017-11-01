@@ -183,7 +183,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
                 rsp.setHeader(i,headers[i]) ;
             
             rsp.statusCode = result.status || 200 ;
-            that.sendReturn(req,rsp,result.value,result.status) ;
+            that.sendReturn(req,rsp,result.value,result.status,context,promise) ;
         }
     } ;
 
