@@ -160,6 +160,9 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
     // Proto-augment "this" with the current request so the remoted API can query session
     // info etc.
     var promise, context = this.proxyContext(name,req,rsp,args) ;
+    if (!('AlreadyHandled' in context)) {
+    		Object.defineProperty(context,"AlreadyHandled",{value:{}}) ;
+    }
 
     fn = this.api[name].fn ;
     if (fn[req.apiVersion])
@@ -205,6 +208,9 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 
     /* Send an error result, invalidating the cache */
     function errorCB(err,status) {
+    		if (err === context.AlreadyHandled)
+    			return ;
+    		
         if (!(err instanceof Error))
             err = new Error(err.message || err.toString()) ;
 
