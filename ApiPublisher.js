@@ -127,7 +127,7 @@ ApiPublisher.prototype.sendReturn = function(req,rsp,result,status) {
     rsp.end(json);
 }
 
-ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
+ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
     var tStart = Date.now() ;
     var args = name.split("?") ;
     var fn, key ;
@@ -135,7 +135,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 
     name = args[0] ;
     if (!this.api[name]) {
-        return errorCB(new Error("Endpoint not found: "+name),404) ;
+    		return next() ;
     }
 
     // Because we like to accept nicely posted JSON, _and_ form input data, we 
@@ -208,7 +208,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp) {
 
     /* Send an error result, invalidating the cache */
     function errorCB(err,status) {
-    		if (err === context.AlreadyHandled)
+    		if (context && err === context.AlreadyHandled)
     			return ;
     		
         if (!(err instanceof Error))
@@ -262,12 +262,12 @@ ApiPublisher.prototype.handle = function(req,rsp,next) {
 
         (function walkPath() {
             if (path.length===0)
-                return self.callRemoteApi(call,req,rsp) ;	// Client is making a remote call
+                return self.callRemoteApi(call,req,rsp,next) ;	// Client is making a remote call
 
             var e = path.shift() ;
             var subApi = self.nested[e] ;
             if (subApi)
-                return subApi.callRemoteApi(call,req,rsp) ;
+                return subApi.callRemoteApi(call,req,rsp,next) ;
 
             if (self.api[e] &&
                 self.api[e].fn &&
