@@ -129,7 +129,7 @@ ApiPublisher.prototype.sendReturn = function(req,rsp,result,status) {
 
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
     var tStart = Date.now() ;
-    var args = name.split("?") ;
+    var args = name.split(/\?(.*)/) ;
     var fn, key ;
     var that = this ;
 
