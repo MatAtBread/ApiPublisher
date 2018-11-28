@@ -9,7 +9,7 @@
 var nodent = require('nodent')({dontInstallRequireHook:true}) ;
 var map = nodent.require('map') ;
 var Thenable = global.Promise || nodent.EagerThenable() ;
-
+var URL = require('url');
 /**
  * Create an object representing functions that can be called remotely
  *  
@@ -246,8 +246,8 @@ ApiPublisher.prototype.serializer = function(req,rsp) {
  */
 
 ApiPublisher.prototype.handle = function(req,rsp,next) {
-    var url = req.url.toString() ;
-    var path = url.split("/") ;
+    var url = URL.parse(req.url.toString()) ;
+    var path = url.pathname.split("/") ;
     if (path[path.length-1]=="")
         path.pop(); // Strip any trailing "/"
     req.apiVersion = Number(path[path.length-1].match(/^[0-9.]+$/)) ; 
@@ -259,6 +259,8 @@ ApiPublisher.prototype.handle = function(req,rsp,next) {
         var self = this ;
         path.shift() ;
         var call = decodeURIComponent(path.pop()) ;
+        if (url.query && req.method === "GET")
+          call = call+"?"+url.query;
 
         (function walkPath() {
             if (path.length===0)
