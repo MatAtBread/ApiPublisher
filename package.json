@@ -1,13 +1,13 @@
 {
   "name": "apipublisher",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Async JS API remoting",
   "main": "index.js",
   "scripts": {
     "test": "open http://localhost:1966/ && node test/run-test-client-server.js"
   },
   "dependencies": {
-    "afn": "git://github.com/MatAtBread/afn.git#2.0.0-prerelease",
+    "afn": "git://github.com/MatAtBread/afn.git#2.0.1-prerelease",
     "nodent": "^3.2.11"
   },
   "devDependencies": {
