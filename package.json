@@ -7,7 +7,7 @@
     "test": "open http://localhost:1966/ && node test/run-test-client-server.js"
   },
   "dependencies": {
-    "afn": "git://github.com/MatAtBread/afn.git#2.0.1-prerelease",
+    "afn": "^2.0.1",
     "nodent": "^3.2.11"
   },
   "devDependencies": {
