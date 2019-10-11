@@ -74,7 +74,7 @@ export interface ApiError extends Error {
     args:any[]
   };
   networkError?:boolean;
-};
+}
 
 export class RemoteApi {
   static load<T extends {}>(endpoint: string): Promise<T>;
