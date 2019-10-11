@@ -10,6 +10,9 @@ var nodent = require('nodent')({dontInstallRequireHook:true}) ;
 var map = nodent.require('map') ;
 var Thenable = global.Promise || nodent.EagerThenable() ;
 var URL = require('url');
+
+var parametersRegex = /(\((.*)\)\s*=>)|(.*)\s*=>|function[^(]*\((.*)\)\s*\{/;
+
 /**
  * Create an object representing functions that can be called remotely
  *  
@@ -17,7 +20,9 @@ var URL = require('url');
  */
 function ApiPublisher(obj,options) {
     options = options || {} ;
-    
+    if (!options.memo)
+        options.memo = {};
+
     var afn = require('afn')(options);
     var that = this ;
     that.api = {} ;
@@ -43,7 +48,8 @@ function ApiPublisher(obj,options) {
             
             that.api[i] = {fn:fn} ;
 			try {
-				that.names[i].parameters = fn.toString().match(/[^(]*(\(.*\))/)[1] ;
+                var m = fn.toString().match(parametersRegex);
+                that.names[i].parameters = "("+m.slice(1).reverse().filter(m => m!=null)[0].trim()+")" ;
 			} catch (ex) {
 				// Unknown number of parameters
 			}
