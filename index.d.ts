@@ -1,6 +1,6 @@
 /* NB: This is not a complete declaration for the ApiPublisher module */
 
-import { ClientRequestArgs, IncomingMessage, OutgoingMessage } from 'http';
+import { ClientRequestArgs, IncomingMessage, OutgoingMessage, ClientRequest, ServerResponse } from 'http';
 import { AfnLoader, MemoAsyncFunction, MemoConfig } from 'afn';
 
 interface HttpRequestHandler {
