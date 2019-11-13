@@ -1,6 +1,6 @@
 /* NB: This is not a complete declaration for the ApiPublisher module */
 
-import { ClientRequestArgs, IncomingMessage, OutgoingMessage, ClientRequest, ServerResponse } from 'http';
+import { ClientRequestArgs, IncomingMessage, OutgoingMessage, ServerResponse } from 'http';
 import { AfnLoader, MemoAsyncFunction, MemoConfig } from 'afn';
 
 interface HttpRequestHandler {
@@ -26,7 +26,7 @@ interface AsyncApi {
 // A RemotedApiContext is the `this` passed to an AsyncApi member when it is called remotely
 // Specifically it will have a `request` and AlreadyHandled properties. Throwing `AlreadyHandled`
 // will prevent the ApiPublisher from generating any response (ie the function should do it iself)
-export type RemotedApiContext<AsyncApi = {}> = { AlreadyHandled?: Error, request?: { res: ServerResponse } & ClientRequest } & AsyncApi | undefined;
+export type RemotedApiContext<AsyncApi = {}> = { AlreadyHandled?: Error, request?: { res: ServerResponse } & IncomingMessage } & AsyncApi;
 
 export const sendRemoteApi: HttpRequestHandler;
 export const remoteApiPath: string;
