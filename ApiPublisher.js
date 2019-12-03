@@ -214,9 +214,11 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
 
     /* Send an error result, invalidating the cache */
     function errorCB(err,status) {
-    		if (context && err === context.AlreadyHandled)
-    			return ;
-    		
+        if (context && err === context.AlreadyHandled)
+            return ;
+    
+        if (err && err.httpStatus)
+            status = err.httpStatus;
         if (!(err instanceof Error))
             err = new Error(err.message || err.toString()) ;
 
