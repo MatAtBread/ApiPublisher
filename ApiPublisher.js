@@ -222,7 +222,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
         if (!(err instanceof Error))
             err = new Error(err.message || err.toString()) ;
 
-        var result = {value:{error:err.message,cause:err.stack} ,status:status || 500} ;
+        var result = {value:{error:err.message,cause:err.stack,payload:err.payload} ,status:status || 500} ;
 
         sendReturn(result);
     } ;
