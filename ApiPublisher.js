@@ -134,9 +134,7 @@ ApiPublisher.prototype.sendReturn = function(req,rsp,result,status) {
 }
 
 ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
-    var tStart = Date.now() ;
     var args = name.split(/\?(.*)/) ;
-    var fn, key ;
     var that = this ;
 
     name = args[0] ;
@@ -163,16 +161,21 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
     if (!Array.isArray(args))
         args = [args] ; // Wasn't a JSON encoded argument list, so wrap it like it was
 
+    var fn = this.api[name].fn ;
+    if (fn[req.apiVersion])
+        fn = fn[req.apiVersion] ; 
+
     // Proto-augment "this" with the current request so the remoted API can query session
     // info etc.
     var promise, context = this.proxyContext(name,req,rsp,args) ;
-    if (!('AlreadyHandled' in context)) {
-    		Object.defineProperty(context,"AlreadyHandled",{value:{}}) ;
+    if (nodent.isThenable(context)) {
+        context.then(function(c){
+            context = c ;
+            withContext();
+        },errorCB)
+    } else {
+        withContext();
     }
-
-    fn = this.api[name].fn ;
-    if (fn[req.apiVersion])
-        fn = fn[req.apiVersion] ; 
 
     /* Send the response to the client */
     function sendReturn(result){
@@ -226,8 +229,14 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
 
         sendReturn(result);
     } ;
-    
-    (promise = fn.apply(context,args)).then(returnCB,errorCB) ;
+
+    function withContext() {
+        if (!('AlreadyHandled' in context)) {
+            Object.defineProperty(context,"AlreadyHandled",{value:{}}) ;
+        }
+
+        (promise = fn.apply(context,args)).then(returnCB,errorCB) ;
+    }
 };
 
 // Deprecated - this is no longer called internally
