@@ -31,10 +31,18 @@ export type RemotedApiContext<AsyncApi = {}> = { AlreadyHandled?: Error, request
 export const sendRemoteApi: HttpRequestHandler;
 export const remoteApiPath: string;
 
-export class ApiPublisher<AsyncApi = {}> {
-  constructor(api: AsyncApi, options?: Parameters<AfnLoader>[0]);
+export class ApiPublisher<ThsiApi extends AsyncApi = {}> {
+  constructor(api: ThsiApi, options?: Parameters<AfnLoader>[0]);
+
   handle: HttpRequestHandler;
-  proxyContext(name:string, req: IncomingMessage, rsp: ServerResponse, args:unknown[]): RemotedApiContext<AsyncApi> | Promise<RemotedApiContext<AsyncApi>>;
+
+  proxyContext<Req extends IncomingMessage, Res extends ServerResponse, Name extends keyof ThsiApi>(
+    name:Name | null, 
+    req: Req, 
+    rsp: Res, 
+    args: Parameters<ThsiApi[Name]> | null
+  ): RemotedApiContext<ThsiApi> | Promise<RemotedApiContext<ThsiApi>>;
+
   serializer(req: IncomingMessage, rsp: ServerResponse): Parameters<typeof JSON.stringify>[1];
   /* TBC
     cacheObject(obj: any, ...args: any[]): any;
