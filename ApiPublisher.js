@@ -235,7 +235,11 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
             Object.defineProperty(context,"AlreadyHandled",{value:{}}) ;
         }
 
-        (promise = fn.apply(context,args)).then(returnCB,errorCB) ;
+        try {
+            (promise = fn.apply(context,args)).then(returnCB,errorCB) ;
+        } catch (ex) {
+            errorCB(ex);
+        }
     }
 };
 
