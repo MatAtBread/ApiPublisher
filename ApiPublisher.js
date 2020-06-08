@@ -83,7 +83,7 @@ ApiPublisher.prototype.warn = function() {
  * @param req
  * @param ok
  */
-ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
+ApiPublisher.prototype.getRemoteApi = function(req,path,ok,error) {
     var self = this ;
     if (path)
         self.path = path ;
@@ -99,10 +99,11 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
                 return fn.apply(self.proxyContext(null,req,null,null),fn.clientInstance).then(function(instanceData){
                     if (instanceData instanceof ApiPublisher) {
                         self.nested[e] = instanceData ;
-                        instanceData.getRemoteApi(req, e, function(api){
-                            api._isRemoteApi = true ;
-                            ok(api) ;
-                        }) ;
+                        instanceData.getRemoteApi(req, e, 
+                            function(api){
+                                api._isRemoteApi = true ;
+                                ok(api) ;
+                            },error) ;
                     } else {
                         ok(instanceData) ;
                     }
@@ -111,7 +112,7 @@ ApiPublisher.prototype.getRemoteApi = function(req,path,ok) {
                 ok(self.names[e]) ;
             }
         });
-    }).then(ok,$error) ;
+    }).then(ok,error || $error) ;
 };
 
 var stdHeaders = {
@@ -123,10 +124,15 @@ var stdHeaders = {
 
 ApiPublisher.prototype.sendRemoteApi = function(req,rsp) {
     var that = this ;
-    this.getRemoteApi(req,null,function(instance){
-        rsp.writeHead(200, stdHeaders);
-        rsp.end(JSON.stringify(instance,that.serializer(req,rsp)));
-    }) ;
+    this.getRemoteApi(req,null,
+        function(instance) {
+            rsp.writeHead(200, stdHeaders);
+            rsp.end(JSON.stringify(instance,that.serializer(req,rsp)));
+        }, function(error){
+            rsp.writeHead(500, stdHeaders);
+            rsp.end(JSON.stringify(error/*,that.serializer(req,rsp)*/));
+        }
+    ) ;
 };
 
 /**
@@ -227,7 +233,7 @@ ApiPublisher.prototype.callRemoteApi = function(name,req,rsp,next) {
         if (err && err.httpStatus)
             status = err.httpStatus;
         if (!(err instanceof Error))
-            err = new Error(err.message || err.toString()) ;
+            err = new Error(err ? (err.message || err.toString()) : "Error") ;
 
         var result = {value:{error:err.message,cause:err.stack} ,status:status || 500} ;
 

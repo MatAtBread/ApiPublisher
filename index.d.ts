@@ -10,6 +10,8 @@ interface HttpRequestHandler {
 // A RemotableAsyncFunction as an async function that has optional `ttl` and `clientInstance` properties
 interface RemotableAsyncFunction<Return, Args extends any[]> extends MemoAsyncFunction<Return, Args> {
   ttl?: {
+    on?: string;
+    t?: number;
     server?: number | MemoConfig<Return, Args>['TTL'],
     serverKey?: MemoConfig<Return, Args>['key'],
     mru?: MemoConfig<Return, Args>['MRU'],
@@ -48,7 +50,6 @@ export class ApiPublisher<ThsiApi extends AsyncApi = {}> {
     cacheObject(obj: any, ...args: any[]): any;
     callRemoteApi(name: any, req: any, rsp: any, next: any): any;
     getRemoteApi(req: any, path: any, ok: any): any;
-    handle(req: any, rsp: any, next: any): any;
     sendRemoteApi(req: any, rsp: any): void;
     sendReturn(req: any, rsp: any, result: any, status: any): void;
     warn(...args: any[]): void;
@@ -61,10 +62,10 @@ export class ServerApi {
   static load<T>(url: string, promiseConstructor?: PromiseConstructor): Promise<T & ServerApi>;
   constructor(url: string, onLoad?: (theApi: ServerApi) => void, promiseConstructor?: PromiseConstructor);
   setHttpOptions(request: ClientRequestArgs): void;
+  headers?: { [key: string]: string };
   /* TBC
     onSuccess(result:unknown):unknown;
     onError(error:unknown):unknown;
-    headers: { [key: string]: string };
     serializer(this: any, key: string, value: any): any;
     reviver(this: any, key: string, value: any): any;
   */
