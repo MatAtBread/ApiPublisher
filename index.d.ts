@@ -75,7 +75,7 @@ export class ServerApi {
 export interface ApiError extends Error {
   httpResponse?:{
     status:number;
-    response:Text;
+    response:string;
   };
   cause?: {
     path:string,
