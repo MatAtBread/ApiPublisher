@@ -11,7 +11,7 @@ var map = nodent.require('map') ;
 var Thenable = global.Promise || nodent.EagerThenable() ;
 var URL = require('url');
 
-var parametersRegex = /(\((.*)\)\s*=>)|(.*)\s*=>|function[^(]*\((.*)\)\s*\{/;
+const parametersRegex = /\((?:[^)(]+|\((?:[^)(]+|\([^)(]*\))*\))*\)|\w+(?=\s*=>)/;
 
 /**
  * Create an object representing functions that can be called remotely
@@ -53,7 +53,8 @@ function ApiPublisher(obj,options) {
             that.api[i] = {fn:fn} ;
 			try {
                 var m = fn.toString().match(parametersRegex);
-                that.names[i].parameters = "("+m.slice(1).reverse().filter(m => m!=null)[0].trim()+")" ;
+                if (m && m[0])
+                    that.names[i].parameters = m[0] ;
 			} catch (ex) {
 				// Unknown number of parameters
 			}
