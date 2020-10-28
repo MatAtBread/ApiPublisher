@@ -1,4 +1,3 @@
-var nodent = require('nodent')({log:function(){}}) ;
 var http = require("http") ;
 
 /* Start the server */

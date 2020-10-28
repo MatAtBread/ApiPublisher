@@ -1,13 +1,7 @@
-"use nodent-promise";
+var ApiPublisher = require('../index').ApiPublisher ;
 
-var ApiPublisher = remoteApi = require('../index').ApiPublisher ;
-
-/*
- * "nodent" friendly setTimeout
- */
-
-async function after(n) {
-	setTimeout(function(){ async return },n) ;
+function after(n) {
+	return new Promise(resolve => setTimeout(resolve, n));
 }
 
 

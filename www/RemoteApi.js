@@ -7,18 +7,8 @@ window.RemoteApi = (function(){
   ApiError.prototype = new Error() ;
 
   var memo = (<@afn$memo@>)({ origin:true }) ;
-  Object.defineProperty(Function.prototype,"$asyncbind",{
-    value:<@$asyncbind@>,
-    writeable:true
-  }) ;
 
-  var Thenable ;
-  try {
-    Thenable = Promise ;
-  } catch (ex) {
-    Nothing.$asyncbind(null,true) ;
-    Thenable = Nothing.$asyncbind.EagerThenable ;
-  }
+  var Thenable = Promise;
   
   function cacheKey(self,args,fn) {
     if (!fn.ttl.t) // Not cachable on the client

@@ -3,7 +3,7 @@ ApiPublisher
 
 ApiPublisher is a simple framework to extend asynchronous calls or Promises across over HTTP. Tested clients exist for NodeJS and web-browsers, and a publisher (server) for NodeJS. The goal of ApiPublisher is provide an identical asynchronous API across clients and servers so that dependent routines can execute at any location without modification.
 
-ApiPublisher works with Connect, Express and Nodent [https://www.npmjs.org/package/nodent] seamlessly.
+ApiPublisher works with Connect & Express seamlessly.
 
 ApiPublisher has been in use since November 2013 in production systems.
 
@@ -20,7 +20,7 @@ Usage
 
 ApiPublisher consists of three components. One to expose APIs from a nodejs server (ApiPublisher), one to call these APIs from another nodejs server (ServerApi) and one to call these APIs from a browser (RemoteApi).
 
-All APIs must return a Promise, or conform to the "funcback" pattern (where a function returns asynchronously by returning a function that accepts to callback arguments - one for the return value, one for exceptions). You can find out more about [choosing between "funcbacks" and Promises](https://github.com/MatAtBread/nodent#es7-and-promises).
+All APIs must return a Promise
 
 You do not have to use ES7 (or anything else) to use ApiPublisher, but the ES7 keywords `async` and `await` make writing async code much easier. If you do not use an ES7 transpiler, you can still call remote functions (as they return Promises) or as "funcbacks".
 
