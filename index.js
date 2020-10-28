@@ -6,7 +6,7 @@ var remoteApiPath = __dirname+"/www/RemoteApi.js" ;
 var remoteApiContent ;
 
 var bundledFunctions = {
-    afn$memo:require('afn/dist/memo')
+    afn$memo:require('afn/memo')
 };
 function sendRemoteApi(req,res,next) {
     res.writeHead(200, {'Content-Type': 'application/javascript; charset=utf-8'} );
