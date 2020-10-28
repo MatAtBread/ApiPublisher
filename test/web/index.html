@@ -1,9 +1,6 @@
 <html>
 <script src="RemoteApi.js"></script>
 <script>
-//Test using "nodent" compiled at the server (nodented.njs)
-//Nodent on the client requires at "top-level" error handler
-//called $error()
 window.$error = function(ex) {
 	alert(JSON.stringify(ex,null,2)) ;
 }

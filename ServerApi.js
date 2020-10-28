@@ -1,7 +1,7 @@
 /**
  * A Node-friendly way to initialise a remote API. cf: RemoteApi.js in the client
  */
-var nodent = require('nodent')() ;
+
 var URL = require('url') ;
 
 function getOwnPropertyDescriptions(obj) {
@@ -128,7 +128,7 @@ ServerApi.prototype.setHttpOptions = function(url) {
 }
 
 ServerApi.load = function(url,ThenableProvider) {
-    ThenableProvider = ThenableProvider || global.Promise || nodent.EagerThenable() ;
+    ThenableProvider = ThenableProvider || Promise ;
 	return new ThenableProvider(function($return,$error) {
 		new ServerApi(url,function(ex){
 			if (ex) $error(ex) ;
