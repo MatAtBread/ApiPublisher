@@ -10,7 +10,7 @@
     "test": "open http://localhost:1966/ && node test/run-test-client-server.js"
   },
   "dependencies": {
-    "afn": "file:../MatAtBread/afn"
+    "afn": "^3.0.0"
   },
   "devDependencies": {
     "connect": "2.x.x"
