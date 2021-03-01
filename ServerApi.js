@@ -36,10 +36,16 @@ function callRemoteFuncBack(that,path,args) {
 					callback(data) ;
 				} else {
 					if (contentType=="application/json") {
-						var exception = JSON.parse(body,that.reviver) ;
-						var exc = new Error(exception.message || exception.error || exception.toString()) ;
-						Object.defineProperties(exc, getOwnPropertyDescriptions(exception)) ;
-						error(exc) ;
+						try {
+							var exception = JSON.parse(body,that.reviver) ;
+							var exc = new Error(exception.message || exception.error || exception.toString()) ;
+							Object.defineProperties(exc, getOwnPropertyDescriptions(exception)) ;
+							error(exc) ;
+						} catch (ex2) {
+							var nested = new Error(body);
+							nested.cause = ex2;
+							error(nested) ;
+						}
 					} else {
 						error(new Error(body)) ;
 					}
