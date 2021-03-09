@@ -35,20 +35,19 @@ function callRemoteFuncBack(that,path,args) {
 						data = !data?data:JSON.parse(data,that.reviver) ;
 					callback(data) ;
 				} else {
+					var exc = new Error(body);
 					if (contentType=="application/json") {
 						try {
 							var exception = JSON.parse(body,that.reviver) ;
-							var exc = new Error(exception.message || exception.error || exception.toString()) ;
+							exc.message = exception.message || exception.error || exception.toString();
 							Object.defineProperties(exc, getOwnPropertyDescriptions(exception)) ;
-							error(exc) ;
 						} catch (ex2) {
-							var nested = new Error(body);
-							nested.cause = ex2;
-							error(nested) ;
+							exc.cause = ex2;
 						}
-					} else {
-						error(new Error(body)) ;
 					}
+					if (!exc.httpStatus)
+						Object.assign(exc,{ httpStatus: res.statusCode });
+					error(exc);
 				}
 			}) ;
 		}).on('error', function(e) {
