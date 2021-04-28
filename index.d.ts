@@ -46,6 +46,7 @@ export class ApiPublisher<ThsiApi extends AsyncApi = {}> {
   ): RemotedApiContext<ThsiApi> | Promise<RemotedApiContext<ThsiApi>>;
 
   serializer(req: IncomingMessage, rsp: ServerResponse): Parameters<typeof JSON.stringify>[1];
+  sendReturn(req: IncomingMessage, rsp: ServerResponse, result: any, status: number): void;
   /* TBC
     cacheObject(obj: any, ...args: any[]): any;
     callRemoteApi(name: any, req: any, rsp: any, next: any): any;
