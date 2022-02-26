@@ -1,6 +1,6 @@
 {
   "name": "apipublisher",
-  "version": "2.0.4",
+  "version": "2.0.6",
   "engines": {
     "node": ">=10.0.0"
   },
@@ -10,7 +10,7 @@
     "test": "open http://localhost:1966/ && node test/run-test-client-server.js"
   },
   "dependencies": {
-    "afn": "^3.0.0"
+    "afn": "^3.0.1"
   },
   "devDependencies": {
     "connect": "2.x.x"

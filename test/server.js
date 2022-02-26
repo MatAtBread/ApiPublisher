@@ -13,7 +13,7 @@ var api = new ApiPublisher(testApi) ;
 
 var app = connect()
 	// Published APIs request arguments in a JSON-encioded body (in req.body)
-	.use(connect.json())				
+	.use(connect.json({ strict: false }))				
 
 	// Remote APIs available under "/testapi", e.g. the descriptor is 
 	// at "/testapi" and the "delay" function in "/testapi/delay"
