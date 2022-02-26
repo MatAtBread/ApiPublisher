@@ -32,9 +32,9 @@ export interface RemoteApiOptions<T extends RemotedApi = {}> {
 */
 }
 
-export type RemotedApi = { [fn: string]: (...a: any[]) => Promise<any> };
+export interface RemotedApi { [fn: string]: (...a: any[]) => Promise<any> }
 
-declare const RemoteApi: RemoteApiOptions & {
+export interface RemoteApi extends RemoteApiOptions {
   load<T extends RemotedApi>(endpoint: string, overrides?: Partial<RemoteApiOptions>): Promise<T & RemoteApiOptions<T>>;
   ApiError: ApiError;
-};
+}
