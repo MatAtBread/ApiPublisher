@@ -39,9 +39,9 @@ export class ApiPublisher<ThsiApi extends AsyncApi = {}> {
   handle: HttpRequestHandler;
 
   proxyContext<Req extends IncomingMessage, Res extends ServerResponse, Name extends keyof ThsiApi>(
-    name:Name | null, 
-    req: Req, 
-    rsp: Res, 
+    name: Name | null,
+    req: Req,
+    rsp: Res,
     args: Parameters<ThsiApi[Name]> | null
   ): RemotedApiContext<ThsiApi> | Promise<RemotedApiContext<ThsiApi>>;
 
@@ -72,37 +72,5 @@ export class ServerApi {
   */
 }
 
-// The constant exposed when the script "RemoteApi.js" is included in a client
-export interface ApiError extends Error {
-  httpResponse?:{
-    status:number;
-    response:string;
-  };
-  cause?: {
-    path:string,
-    name:string,
-    args:any[]
-  };
-  networkError?:boolean;
-}
-
-export class RemoteApi {
-  static load<T extends {}>(endpoint: string): Promise<T>;
-  static ApiError:ApiError;
-  /* TBC
-    static RemoteApi.StorageCache: function(storage)
-    static RemoteApi.ObjectCache: function ObjectCache(name)
-
-    onSuccess:function(result)
-    onError:function(xhr)
-    apiStart:function(path,name,args,xhr)
-    apiEnd:function(path,name,args,error,data)
-    version:"",
-    reviver:null,
-    serializer:null,
-    headers:null,
-    log:function() {},
-    Cache:RemoteApi.ObjectCache,
-    clearCache:function()
- */
-}
+// The types exposed when the script "RemoteApi.js" is included in a client
+export * from './www';
