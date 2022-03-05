@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+
 // The constant exposed when the script "RemoteApi.js" is included in a client
 export interface ApiError extends Error {
   httpResponse?: {

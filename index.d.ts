@@ -3,7 +3,7 @@
 import { ClientRequestArgs, IncomingMessage, OutgoingMessage, ServerResponse } from 'http';
 import { AfnLoader, MemoAsyncFunction, MemoConfig } from 'afn';
 
-interface HttpRequestHandler {
+export interface HttpRequestHandler {
   (req: IncomingMessage, res: OutgoingMessage, next: (err?: any) => void): any;
 }
 
@@ -46,13 +46,12 @@ export class ApiPublisher<ThsiApi extends AsyncApi = {}> {
   ): RemotedApiContext<ThsiApi> | Promise<RemotedApiContext<ThsiApi>>;
 
   serializer(req: IncomingMessage, rsp: ServerResponse): Parameters<typeof JSON.stringify>[1];
-  sendReturn(req: IncomingMessage, rsp: ServerResponse, result: any, status: number): void;
+  sendReturn(req: IncomingMessage, rsp: ServerResponse, result: any, status: number, context: RemotedApiContext<ThsiApi>, promise: { origin: string[]}): void;
   /* TBC
     cacheObject(obj: any, ...args: any[]): any;
     callRemoteApi(name: any, req: any, rsp: any, next: any): any;
     getRemoteApi(req: any, path: any, ok: any): any;
     sendRemoteApi(req: any, rsp: any): void;
-    sendReturn(req: any, rsp: any, result: any, status: any): void;
     warn(...args: any[]): void;
   */
 }
