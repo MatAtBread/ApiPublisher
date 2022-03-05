@@ -21,7 +21,7 @@ interface RemotableAsyncFunction<Return, Args extends any[]> extends MemoAsyncFu
 }
 
 // An AsyncApi is an object containing RemotableAsyncFunctions (async functions)
-interface AsyncApi {
+export interface AsyncApi {
   [key: string]: RemotableAsyncFunction<any, any[]>;
 }
 
