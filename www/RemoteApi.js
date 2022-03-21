@@ -50,7 +50,7 @@ window.RemoteApi = (function(){
         };
         var paramData = JSON.stringify(Array.prototype.slice.call(args),that.serializer);
         if (that.method === "GET")
-          x.open("GET", path+"/"+name+"/"+that.version+"?"+paramData, true);
+          x.open("GET", path+"/"+name+"/"+that.version+"?"+encodeURIComponent(paramData), true);
         else
           x.open("POST", path+"/"+name+"/"+that.version, true);
         that.apiStart(path,name,args,x);
