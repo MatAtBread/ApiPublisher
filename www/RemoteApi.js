@@ -78,7 +78,7 @@ window.RemoteApi = (function(){
                 var ex = new ApiError(data.message || data.error || data.cause || x.status);
                 ex.httpResponse = {status:x.status, response: x.responseText};
                 ex.cause = {path:path,name:name,args:args};
-                that.apiEnd(path,name,args,false,data);
+                that.apiEnd(path,name,args,false,ex);
                 return error(ex);
               }
             } else {
