@@ -57,6 +57,11 @@ window.RemoteApi = (function(){
         x.setRequestHeader("Content-Type","application/json; charset=utf-8");
         x.setRequestHeader("documentReferer", document.referrer);
         setHeaders(x,that.headers);
+        var retried = false;
+        var retry = function(promise){
+          retried = true;
+          promise && typeof promise.then==='function' ? promise.then(function(){callRemoteFuncBack(that,path,name,args)},error) : callRemoteFuncBack(that,path,name,args);
+        }
         x.onreadystatechange = function() {
           if (x.readyState==4) {
             var contentType = x.getResponseHeader("Content-Type");
@@ -69,31 +74,34 @@ window.RemoteApi = (function(){
               } catch (ex) {
                 ex.cause = {path:path,name:name,args:args};
                 that.apiEnd(path,name,args,false,ex);
-                return error(ex);
+                return !retried && error(ex);
               }
-              if (x.status==200) {
+              if (x.status>=200 || x.status<=299) {
                 that.apiEnd(path,name,args,true,data);
-                return callback(data);
+                return !retried && callback(data);
               } else {
                 var ex = new ApiError(data.message || data.error || data.cause || x.status);
                 ex.httpResponse = {status:x.status, response: x.responseText};
                 ex.cause = {path:path,name:name,args:args};
                 that.apiEnd(path,name,args,false,ex);
-                return error(ex);
+                ex.retry = retry;
+                return !retried && error(ex);
               }
             } else {
               if (x.status==0) { // No network
                 var ex = new ApiError("No network");
                 ex.networkError = true;
                 ex.cause = {path:path,name:name,args:args};
+                ex.retry = retry;
                 that.apiEnd(path,name,args,false,ex);
-                return error(ex);
+                return !retried && error(ex);
               } else {
                 var ex = new ApiError(x.responseText || x.status);
                 ex.httpResponse = {status:x.status, response: x.responseText};
                 ex.cause = {path:path,name:name,args:args};
+                ex.retry = retry;
                 that.apiEnd(path,name,args,false,ex);
-                return error(ex);
+                return !retried && error(ex);
               }
             }
           }
