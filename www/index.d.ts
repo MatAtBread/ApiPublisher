@@ -2,7 +2,8 @@
 
 // The constant exposed when the script "RemoteApi.js" is included in a client
 export interface ApiError extends Error {
-  httpResponse?: {
+  networkError?: boolean; // If true, there will be no httpRespose
+  httpResponse?: {  // Present when networkError is falsy
     status: number;
     response: string;
   };
@@ -11,7 +12,7 @@ export interface ApiError extends Error {
     name: string,
     args: any[]
   };
-  networkError?: boolean;
+  retry?: (p?: Promise)=>void; // Retry the failed operation, optionally on resolution of the specified Promise
 }
 
 export interface RemoteApiOptions<T extends RemotedApi = {}> {

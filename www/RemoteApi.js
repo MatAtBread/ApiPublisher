@@ -39,68 +39,71 @@ window.RemoteApi = (function(){
           x.setRequestHeader(name,headers[name]);
   }
 
-  function RemoteApi(url,options,onLoad) {
-    function callRemoteFuncBack(that,path,name,args) {
-      return new Thenable(function(callback,error) {
+  function RemoteApi(url, options, onLoad) {
+    function callRemoteFuncBack(that, path, name, args) {
+      function tryRemoteCall(callback, error) {
         if (!callback) callback = that.onSuccess;
         if (!error) error = that.onError;
         var x = new XMLHttpRequest();
-        x.toString = function() {
-          return path+"/"+name+"/"+that.version+":"+x.status+" - "+new Date().toString();
+        x.toString = function () {
+          return path + "/" + name + "/" + that.version + ":" + x.status + " - " + new Date().toString();
         };
-        var paramData = JSON.stringify(Array.prototype.slice.call(args),that.serializer);
+        var paramData = JSON.stringify(Array.prototype.slice.call(args), that.serializer);
         if (that.method === "GET")
-          x.open("GET", path+"/"+name+"/"+that.version+"?"+encodeURIComponent(paramData), true);
+          x.open("GET", path + "/" + name + "/" + that.version + "?" + encodeURIComponent(paramData), true);
         else
-          x.open("POST", path+"/"+name+"/"+that.version, true);
-        that.apiStart(path,name,args,x);
-        x.setRequestHeader("Content-Type","application/json; charset=utf-8");
+          x.open("POST", path + "/" + name + "/" + that.version, true);
+        that.apiStart(path, name, args, x);
+        x.setRequestHeader("Content-Type", "application/json; charset=utf-8");
         x.setRequestHeader("documentReferer", document.referrer);
-        setHeaders(x,that.headers);
+        setHeaders(x, that.headers);
         var retried = false;
-        var retry = function(promise){
+        function retry(promise) {
           retried = true;
-          promise && typeof promise.then==='function' ? promise.then(function(){callRemoteFuncBack(that,path,name,args)},error) : callRemoteFuncBack(that,path,name,args);
+          if (promise && typeof promise.then === 'function')
+            promise.then(function () { tryRemoteCall(callback, error) }, error)
+          else
+            tryRemoteCall(callback, error);
         }
-        x.onreadystatechange = function() {
-          if (x.readyState==4) {
+        x.onreadystatechange = function () {
+          if (x.readyState == 4) {
             var contentType = x.getResponseHeader("Content-Type");
-            if (contentType) contentType = contentType.split(";")[0]; 
-            if (contentType=="application/json" || contentType=="text/plain") {
+            if (contentType) contentType = contentType.split(";")[0];
+            if (contentType == "application/json" || contentType == "text/plain") {
               var data = x.responseText;
               try {
-                if (contentType=="application/json")
-                  data = !data?data:JSON.parse(data,that.reviver);
+                if (contentType == "application/json")
+                  data = !data ? data : JSON.parse(data, that.reviver);
               } catch (ex) {
-                ex.cause = {path:path,name:name,args:args};
-                that.apiEnd(path,name,args,false,ex);
+                ex.cause = { path: path, name: name, args: args };
+                that.apiEnd(path, name, args, false, ex);
                 return !retried && error(ex);
               }
-              if (x.status>=200 || x.status<=299) {
-                that.apiEnd(path,name,args,true,data);
+              if (x.status >= 200 || x.status <= 299) {
+                that.apiEnd(path, name, args, true, data);
                 return !retried && callback(data);
               } else {
                 var ex = new ApiError(data.message || data.error || data.cause || x.status);
-                ex.httpResponse = {status:x.status, response: x.responseText};
-                ex.cause = {path:path,name:name,args:args};
-                that.apiEnd(path,name,args,false,ex);
+                ex.httpResponse = { status: x.status, response: x.responseText };
+                ex.cause = { path: path, name: name, args: args };
                 ex.retry = retry;
+                that.apiEnd(path, name, args, false, ex);
                 return !retried && error(ex);
               }
             } else {
-              if (x.status==0) { // No network
+              if (x.status == 0) { // No network
                 var ex = new ApiError("No network");
                 ex.networkError = true;
-                ex.cause = {path:path,name:name,args:args};
+                ex.cause = { path: path, name: name, args: args };
                 ex.retry = retry;
-                that.apiEnd(path,name,args,false,ex);
+                that.apiEnd(path, name, args, false, ex);
                 return !retried && error(ex);
               } else {
                 var ex = new ApiError(x.responseText || x.status);
-                ex.httpResponse = {status:x.status, response: x.responseText};
-                ex.cause = {path:path,name:name,args:args};
+                ex.httpResponse = { status: x.status, response: x.responseText };
+                ex.cause = { path: path, name: name, args: args };
                 ex.retry = retry;
-                that.apiEnd(path,name,args,false,ex);
+                that.apiEnd(path, name, args, false, ex);
                 return !retried && error(ex);
               }
             }
@@ -110,88 +113,89 @@ window.RemoteApi = (function(){
           x.send();
         else
           x.send(paramData);
-        return x.abort.bind ? x.abort.bind(x):function(){ x.abort(); };
-      });
+        return x.abort.bind ? x.abort.bind(x) : function () { x.abort(); };
+      }
+      return new Thenable(tryRemoteCall);
     }
 
     var that = this;
 
     if (options) {
-      Object.keys(options).forEach(function(k){
+      Object.keys(options).forEach(function (k) {
         that[k] = options[k];
       });
     }
-    
-    if (typeof url!="function") {
+
+    if (typeof url != "function") {
       var path = url;
       path = path.split("/");
-      if (path[path.length-1]=="")
+      if (path[path.length - 1] == "")
         path.pop(); // Strip any trailing "/"
-      var version = Number(path[path.length-1].match(/^[0-9.]+$/)); 
+      var version = Number(path[path.length - 1].match(/^[0-9.]+$/));
       if (version && !isNaN(version)) {
         path.pop(); // Strip the version number
         this.version = version;
       }
       url = path.join("/");
     }
-    
-      
-    if (!onLoad)
-      onLoad = function(){};
 
-    function loadApi(url,api){
-      Object.keys(api).forEach(function(i) {
+
+    if (!onLoad)
+      onLoad = function () { };
+
+    function loadApi(url, api) {
+      Object.keys(api).forEach(function (i) {
         if (api[i] && !(api[i].parameters === null || api[i].parameters === undefined)) {
-          that[i] = function() {
-            return callRemoteFuncBack(that,url,i,arguments); 
+          that[i] = function () {
+            return callRemoteFuncBack(that, url, i, arguments);
           }
           if (api[i].ttl) {
             that[i].ttl = api[i].ttl;
-            that[i] = memo(that[i],{ttl:api[i].ttl.t*1000, key: cacheKey, createCache:function(cacheID){ return new that.Cache(url+"/"+i) }});
+            that[i] = memo(that[i], { ttl: api[i].ttl.t * 1000, key: cacheKey, createCache: function (cacheID) { return new that.Cache(url + "/" + i) } });
           } else {
             that[i].clearCache = Nothing;
           }
           that[i].parameters = api[i].parameters;
-          that[i].remoteName = url+"/"+i; 
+          that[i].remoteName = url + "/" + i;
         } else {
-          var staticVal = that.reviver?that.reviver("",api[i]):api[i]; 
-          that[i] = function() {
-            return new Thenable(function(ok,error) {
+          var staticVal = that.reviver ? that.reviver("", api[i]) : api[i];
+          that[i] = function () {
+            return new Thenable(function (ok, error) {
               return (ok || that.onSuccess)(staticVal);
             });
           };
           that[i].clearCache = Nothing;
-          that[i].remoteName = url+"/"+i; 
+          that[i].remoteName = url + "/" + i;
           if (api[i]._isRemoteApi) {
             delete staticVal._isRemoteApi;
-            new RemoteApi(that[i],options,function(){
+            new RemoteApi(that[i], options, function () {
               that[i] = this;
             });
           }
         }
       });
-      onLoad.call(that,null);
+      onLoad.call(that, null);
     }
-    
+
     if (typeof url === 'function') {
-      function loadAsync(api){
-        loadApi(url.remoteName,api);
+      function loadAsync(api) {
+        loadApi(url.remoteName, api);
       }
       url().then(loadAsync);
     } else {
       var x = new XMLHttpRequest();
-      x.open("GET", url+"/"+that.version, true);
-      
-      x.setRequestHeader("documentReferer", document.referrer);
-      setHeaders(x,that.headers);
+      x.open("GET", url + "/" + that.version, true);
 
-      x.onreadystatechange = function() {
-        if (x.readyState==4) {
-          if (x.status==200) {
+      x.setRequestHeader("documentReferer", document.referrer);
+      setHeaders(x, that.headers);
+
+      x.onreadystatechange = function () {
+        if (x.readyState == 4) {
+          if (x.status == 200) {
             var api = JSON.parse(x.responseText);
-            loadApi(url,api);
+            loadApi(url, api);
           } else {
-            onLoad.call(that,x);
+            onLoad.call(that, x);
           }
         }
       }
