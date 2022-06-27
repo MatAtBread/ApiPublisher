@@ -12,7 +12,7 @@ export interface ApiError extends Error {
     name: string,
     args: any[]
   };
-  retry?: (p?: Promise)=>void; // Retry the failed operation, optionally on resolution of the specified Promise
+  retry?: (p?: Promise<unknown>)=>void; // Retry the failed operation, optionally on resolution of the specified Promise
 }
 
 export interface RemoteApiOptions<T extends RemotedApi = {}> {
