@@ -79,7 +79,7 @@ window.RemoteApi = (function(){
                 that.apiEnd(path, name, args, false, ex);
                 return !retried && error(ex);
               }
-              if (x.status >= 200 || x.status <= 299) {
+              if (x.status >= 200 && x.status <= 299) {
                 that.apiEnd(path, name, args, true, data);
                 return !retried && callback(data);
               } else {
