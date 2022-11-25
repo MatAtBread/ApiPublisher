@@ -39,7 +39,8 @@ function ApiPublisher(obj, options) {
       if (fn.ttl && !fn.clientInstance) {
         that.names[i].ttl = fn.ttl; // Remote call info
         const usableOpts = {
-          ttl: typeof fn.ttl.server === "number" ? fn.ttl.server * 1000 : fn.ttl.server
+          // NB: afn@3 uses upper case TTL preferentially, and string definitions
+          TTL: typeof fn.ttl.server === "number" ? fn.ttl.server+"s" : fn.ttl.server
         };
         if (fn.ttl.serverKey !== undefined)
           usableOpts.key = fn.ttl.serverKey;
